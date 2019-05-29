@@ -138,6 +138,7 @@ public:
 
 		std::cout << __FUNCTION__ << " | MER:" << rect_MER << ", area:" << rect_MER.width * rect_MER.height << endl;
 		cv::imshow("mat src with MER", mat_src_gray);
+		cv::imwrite(str_img_path + "_withMER.jpg", mat_src_gray);
 		cv::waitKey(0);
 	}
 
@@ -503,6 +504,10 @@ protected:
 								flag_y_min = m;
 								flag_y_max = n;
 							}
+						}
+						else
+						{//有黑点在四边所组成的矩形内
+							break;
 						}
 					}
 				}
