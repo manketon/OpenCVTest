@@ -470,28 +470,29 @@ protected:
 				for (int m = nYmin + 1; m < nYmax; ++m)
 				{
 					//判定三条线所得的两个顶点是否在轮廓外
-					cv::Point2f pointA(i, m);
-					cv::Point2f pointB(j, m);
-// 					if (cv::pointPolygonTest(contour, pointA, false) < 0)
-// 					{//在轮廓外
-// 						continue;
-// 					}
-// 					if (cv::pointPolygonTest(contour, pointB, false) < 0)//时间复杂度高，故将pointPolygonTest屏蔽
-// 					{//在轮廓外
-// 						continue;
-// 					}
+					//根据灰度值来判定点是否在轮廓外
+					if (mat_src_binary_gray.at<uchar>(m, i) == 0 && mat_src_binary_gray.at<uchar>(m, i + 1) != 0
+						&& mat_src_binary_gray.at<uchar>(m + 1, i) != 0 && mat_src_binary_gray.at<uchar>(m + 1, i + 1) != 0)
+					{//至少有一个点在轮廓外
+						continue;
+					}
+					if (mat_src_binary_gray.at<uchar>(m, j) == 0 && mat_src_binary_gray.at<uchar>(m, j - 1) != 0
+						&& mat_src_binary_gray.at<uchar>(m +1, j) != 0 && mat_src_binary_gray.at<uchar>(m + 1, j - 1) != 0)
+					{
+						continue;
+					}
 					for (int n = m + 1; n < nYmax; ++n)
 					{
-						cv::Point2f pointC(i, n);
-						cv::Point2f pointD(j, n);
-// 						if (cv::pointPolygonTest(contour, pointC, false) < 0)
-// 						{//在轮廓外
-// 							continue;
-// 						}
-// 						if (cv::pointPolygonTest(contour, pointD, false) < 0)
-// 						{//在轮廓外
-// 							continue;
-// 						}
+						if (mat_src_binary_gray.at<uchar>(n, i) == 0 && mat_src_binary_gray.at<uchar>(n, i + 1) != 0
+							&& mat_src_binary_gray.at<uchar>(n - 1, i) != 0 && mat_src_binary_gray.at<uchar>(n - 1, i + 1) != 0)
+						{//至少有一个点在轮廓外
+							continue;
+						}
+						if (mat_src_binary_gray.at<uchar>(n, j) == 0 && mat_src_binary_gray.at<uchar>(n, j - 1) != 0
+							&& mat_src_binary_gray.at<uchar>(n - 1, j) != 0 && mat_src_binary_gray.at<uchar>(n - 1, j - 1) != 0)
+						{
+							continue;
+						}
 						if (no_black_in_rect(mat_src_binary_gray, i, j, m, n) == true)
 						{
 							//计算面积
@@ -506,7 +507,7 @@ protected:
 							}
 						}
 						else
-						{//有黑点在四边所组成的矩形内
+						{//有黑点在四边所组成的矩形内,则不再当前方向上继续扩展边界
 							break;
 						}
 					}
@@ -600,6 +601,35 @@ protected:
 			}
 		}
 		return true;
+	}
+	//点在轮廓外
+	bool is_out_of_contour(const Mat& mat_src_binary_gray, const vector<Point>& contour, const Point& p0)
+	{
+		if (contour.empty())
+		{
+			printf("%s | contour is empty.", __FUNCTION__);
+			exit(-1);
+		}
+		//获取轮廓内的一个坐标点
+		//取轮廓0、1/3点的中心点
+		Point temp0_0 = contour[0];
+		Point temp1_3 =  contour[contour.size()/3];
+		Point point_middle_1 = (temp0_0 + temp1_3) / 2;
+		//取轮廓1/2、2/3处的点的中心点
+		Point temp1_2 = contour[contour.size()/2];
+		Point temp2_3 = contour[contour.size() * 2 / 3];
+		Point point_middle_2 = (temp1_2 + temp2_3) / 2;
+		//再取中心点的中心点，所得点肯定在轮廓内
+		Point p1 = (point_middle_1 + point_middle_2) / 2 ;
+		//从点p0到点p1：像素值先黑后白
+		if (mat_src_binary_gray.at<uchar>(p0) == 0 && mat_src_binary_gray.at<uchar>(p1) != 0)
+		{
+			return true;
+		}
+		else
+		{
+			false;
+		}
 	}
 private:
 };
