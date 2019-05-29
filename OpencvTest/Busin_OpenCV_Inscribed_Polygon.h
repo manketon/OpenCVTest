@@ -120,6 +120,7 @@ public:
 		Mat mat_src_gray = imread(str_img_path, IMREAD_GRAYSCALE);
 		cv::namedWindow("mat_src_gray", CV_WINDOW_AUTOSIZE);
 		threshold(mat_src_gray, mat_src_gray, 100, 255,THRESH_BINARY_INV);
+		imwrite(str_img_path+"_binary_gray.jpg", mat_src_gray);
 		cv::imshow("mat_src_gray", mat_src_gray);
 		//查找最大面积的轮廓
 		vector<Point> vec_max_area_contour = FindBiggestContour(mat_src_gray);
@@ -307,7 +308,7 @@ protected:
 				nCount = i;
 				dMax_area_contour = dTemp_area;
 			}
-#ifdef _DEBU
+#ifdef _DEBUG
 			Mat drawing = Mat::zeros( mat_src_gray.size(), CV_8UC1 );
 			drawContours( drawing, contours, i, Scalar(255), 2, 8);
 			cv::imshow("drawing", drawing);
@@ -463,11 +464,11 @@ protected:
 		int flag_x_min = 0, flag_x_max = 0, flag_y_min = 0, flag_y_max = 0;
 		int nXmin = rect_bbox.x, nXmax = rect_bbox.x + rect_bbox.width;
 		int nYmin = rect_bbox.y, nYmax = rect_bbox.y + rect_bbox.height;
-		for (int i = nXmin + 1; i < nXmax; ++i)
+		for (int i = nXmin; i <= nXmax; ++i)
 		{
-			for (int j = i + 1; j < nXmax; ++j)
+			for (int j = i + 1; j <= nXmax; ++j)
 			{
-				for (int m = nYmin + 1; m < nYmax; ++m)
+				for (int m = nYmin; m <= nYmax; ++m)
 				{
 					//判定三条线所得的两个顶点是否在轮廓外
 					//根据灰度值来判定点是否在轮廓外
@@ -481,7 +482,7 @@ protected:
 					{
 						continue;
 					}
-					for (int n = m + 1; n < nYmax; ++n)
+					for (int n = m + 1; n <= nYmax; ++n)
 					{
 						if (mat_src_binary_gray.at<uchar>(n, i) == 0 && mat_src_binary_gray.at<uchar>(n, i + 1) != 0
 							&& mat_src_binary_gray.at<uchar>(n - 1, i) != 0 && mat_src_binary_gray.at<uchar>(n - 1, i + 1) != 0)
