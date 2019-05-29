@@ -475,7 +475,7 @@ protected:
 // 					{//在轮廓外
 // 						continue;
 // 					}
-// 					if (cv::pointPolygonTest(contour, pointB, false) < 0)//时间复杂度高
+// 					if (cv::pointPolygonTest(contour, pointB, false) < 0)//时间复杂度高，故将pointPolygonTest屏蔽
 // 					{//在轮廓外
 // 						continue;
 // 					}
