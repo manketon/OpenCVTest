@@ -113,6 +113,33 @@ public:
 		cv::imshow("mat src with MER", mat_src_gray);
 		cv::waitKey(0);
 	}
+	void test_max_inscribed_rect_using_traversing2()
+	{
+		double Time = (double)cvGetTickCount();
+		const string str_img_path = "./images_for_MER/2.jpg";
+		Mat mat_src_gray = imread(str_img_path, IMREAD_GRAYSCALE);
+		cv::namedWindow("mat_src_gray", CV_WINDOW_AUTOSIZE);
+		threshold(mat_src_gray, mat_src_gray, 100, 255,THRESH_BINARY_INV);
+		cv::imshow("mat_src_gray", mat_src_gray);
+		//查找最大面积的轮廓
+		vector<Point> vec_max_area_contour = FindBiggestContour(mat_src_gray);
+		if (vec_max_area_contour.empty())
+		{
+			printf("%s | error\n", __FUNCTION__);
+			return;
+		}
+		//计算轮廓的最小外包矩形
+		Rect rect_bbox =  cv::boundingRect(vec_max_area_contour);
+		Rect rect_MER = get_upRight_MER_using_traversing2(mat_src_gray, vec_max_area_contour, rect_bbox);
+		Time = (double)cvGetTickCount() - Time;
+		printf( "run time = %gms\n", Time /(cvGetTickFrequency()*1000) );//毫秒
+		//在原图中画出矩形
+		cv::rectangle(mat_src_gray, rect_MER, Scalar(0, 0, 0),1, LINE_8,0);
+
+		std::cout << __FUNCTION__ << " | MER:" << rect_MER << ", area:" << rect_MER.width * rect_MER.height << endl;
+		cv::imshow("mat src with MER", mat_src_gray);
+		cv::waitKey(0);
+	}
 
 	int test3()
 	{
@@ -429,6 +456,62 @@ protected:
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << endl;
 		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min, flag_y_max - flag_y_min);
 	}
+	Rect get_upRight_MER_using_traversing2(const Mat& mat_src_binary_gray, const vector<Point>& contour,const Rect& rect_bbox)
+	{
+		double dMax_area = INT_MIN;
+		int flag_x_min = 0, flag_x_max = 0, flag_y_min = 0, flag_y_max = 0;
+		int nXmin = rect_bbox.x, nXmax = rect_bbox.x + rect_bbox.width;
+		int nYmin = rect_bbox.y, nYmax = rect_bbox.y + rect_bbox.height;
+		for (int i = nXmin + 1; i < nXmax; ++i)
+		{
+			for (int j = i + 1; j < nXmax; ++j)
+			{
+				for (int m = nYmin + 1; m < nYmax; ++m)
+				{
+					//判定三条线所得的两个顶点是否在轮廓外
+					cv::Point2f pointA(i, m);
+					cv::Point2f pointB(j, m);
+// 					if (cv::pointPolygonTest(contour, pointA, false) < 0)
+// 					{//在轮廓外
+// 						continue;
+// 					}
+// 					if (cv::pointPolygonTest(contour, pointB, false) < 0)//时间复杂度高
+// 					{//在轮廓外
+// 						continue;
+// 					}
+					for (int n = m + 1; n < nYmax; ++n)
+					{
+						cv::Point2f pointC(i, n);
+						cv::Point2f pointD(j, n);
+// 						if (cv::pointPolygonTest(contour, pointC, false) < 0)
+// 						{//在轮廓外
+// 							continue;
+// 						}
+// 						if (cv::pointPolygonTest(contour, pointD, false) < 0)
+// 						{//在轮廓外
+// 							continue;
+// 						}
+						if (no_black_in_rect(mat_src_binary_gray, i, j, m, n) == true)
+						{
+							//计算面积
+							double dArea_tmp = (j - i)*(n - m);
+							if (dMax_area < dArea_tmp)
+							{
+								dMax_area = dArea_tmp;
+								flag_x_min = i;
+								flag_x_max = j;
+								flag_y_min = m;
+								flag_y_max = n;
+							}
+						}
+					}
+				}
+			}
+		}
+		std::cout << __FUNCTION__ << " | flag_x_min:" << flag_x_min << ", flag_x_max:" << flag_x_max 
+			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << endl;
+		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min, flag_y_max - flag_y_min);
+	}
 	//判定矩形四边是否含有黑色点，任一边含有黑色点都返回真
 	bool rect_edge_has_black(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
 	{
@@ -470,6 +553,48 @@ protected:
 			}
 		}
 		return false;
+	}
+	//矩形内无黑色点
+	bool no_black_in_rect(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
+	{
+		//上边
+		int y = nYmin + 1;
+		int x = 0;
+		for ( x = nXmin + 1; x < nXmax; ++x)
+		{
+			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+			{//为黑色
+				return false;
+			}
+		}
+		//右边
+		x = nXmax - 1;
+		for (y = nYmin + 1; y < nYmax; ++y)
+		{
+			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+			{//为黑色
+				return false;
+			}
+		}
+		//下边
+		y = nYmax - 1;
+		for ( x = nXmin + 1; x < nXmax; ++x)
+		{
+			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+			{//为黑色
+				return false;
+			}
+		}
+		//左边
+		x = nXmin + 1;
+		for (y = nYmin + 1; y < nYmax; ++y)
+		{
+			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+			{//为黑色
+				return false;
+			}
+		}
+		return true;
 	}
 private:
 };
