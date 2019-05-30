@@ -31,7 +31,17 @@ extern "C" {
 using namespace std;
 using namespace cv;
 //宏定义
+struct BG_Element
+{
+	BG_Element()
+		: nBegin(0)
+		, nEnd(0)
+	{
 
+	}
+	size_t nBegin;
+	size_t nEnd;
+};
 //类型定义
 class CInscribed_Polygon_Tool
 {
@@ -489,28 +499,28 @@ protected:
 				{
 					//判定三条线所得的两个顶点是否在轮廓外
 					//根据灰度值来判定点是否在轮廓外
-// 					if (mat_src_binary_gray.at<uchar>(m, i) == 0 && mat_src_binary_gray.at<uchar>(m, i + 1) != 0
-// 						&& mat_src_binary_gray.at<uchar>(m + 1, i) != 0 && mat_src_binary_gray.at<uchar>(m + 1, i + 1) != 0)
-// 					{//至少有一个点在轮廓外
-// 						continue;
-// 					}
-// 					if (mat_src_binary_gray.at<uchar>(m, j) == 0 && mat_src_binary_gray.at<uchar>(m, j - 1) != 0
-// 						&& mat_src_binary_gray.at<uchar>(m +1, j) != 0 && mat_src_binary_gray.at<uchar>(m + 1, j - 1) != 0)
-// 					{
-// 						continue;
-// 					}
+					if (mat_src_binary_gray.at<uchar>(m, i) == 0 && mat_src_binary_gray.at<uchar>(m, i + 1) != 0
+						&& mat_src_binary_gray.at<uchar>(m + 1, i) != 0 && mat_src_binary_gray.at<uchar>(m + 1, i + 1) != 0)
+					{//至少有一个点在轮廓外
+						continue;
+					}
+					if (mat_src_binary_gray.at<uchar>(m, j) == 0 && mat_src_binary_gray.at<uchar>(m, j - 1) != 0
+						&& mat_src_binary_gray.at<uchar>(m +1, j) != 0 && mat_src_binary_gray.at<uchar>(m + 1, j - 1) != 0)
+					{
+						continue;
+					}
 					for (int n = nSub_rect_MaxY; n <= nYmax; ++n)
 					{
-// 						if (mat_src_binary_gray.at<uchar>(n, i) == 0 && mat_src_binary_gray.at<uchar>(n, i + 1) != 0
-// 							&& mat_src_binary_gray.at<uchar>(n - 1, i) != 0 && mat_src_binary_gray.at<uchar>(n - 1, i + 1) != 0)
-// 						{//至少有一个点在轮廓外
-// 							continue;
-// 						}
-// 						if (mat_src_binary_gray.at<uchar>(n, j) == 0 && mat_src_binary_gray.at<uchar>(n, j - 1) != 0
-// 							&& mat_src_binary_gray.at<uchar>(n - 1, j) != 0 && mat_src_binary_gray.at<uchar>(n - 1, j - 1) != 0)
-// 						{
-// 							continue;
-// 						}
+						if (mat_src_binary_gray.at<uchar>(n, i) == 0 && mat_src_binary_gray.at<uchar>(n, i + 1) != 0
+							&& mat_src_binary_gray.at<uchar>(n - 1, i) != 0 && mat_src_binary_gray.at<uchar>(n - 1, i + 1) != 0)
+						{//至少有一个点在轮廓外
+							continue;
+						}
+						if (mat_src_binary_gray.at<uchar>(n, j) == 0 && mat_src_binary_gray.at<uchar>(n, j - 1) != 0
+							&& mat_src_binary_gray.at<uchar>(n - 1, j) != 0 && mat_src_binary_gray.at<uchar>(n - 1, j - 1) != 0)
+						{
+							continue;
+						}
 					    //由于此时边界不是从最短距离开始的，有可能会跳过中间的黑点，导致错误。
 						if (no_black_in_rect(mat_src_binary_gray, i, j, m, n) == true)
 						{
