@@ -135,14 +135,24 @@ public:
 		Time = (double)cvGetTickCount() - Time;
 		printf( "run time = %gms\n", Time /(cvGetTickFrequency()*1000) );//毫秒
 		//在原图中画出矩形
-		cv::rectangle(mat_src_gray, rect_MER, Scalar(0, 0, 0),1, LINE_8,0);
-
+		cv::rectangle(mat_src_gray, rect_MER, Scalar(100, 100, 100), 1, LINE_8,0);
 		std::cout << __FUNCTION__ << " | MER:" << rect_MER << ", area:" << rect_MER.width * rect_MER.height << endl;
 		cv::imshow("mat src with MER", mat_src_gray);
 		cv::imwrite(str_img_path + "_withMER.jpg", mat_src_gray);
 		cv::waitKey(0);
 	}
-
+	void test_rect()
+	{
+		const string str_img_path = "./images_for_MER/2.jpg_binary_gray.jpg";
+		Mat mat_src_gray = imread(str_img_path);
+		cv::namedWindow("mat_src_gray", CV_WINDOW_AUTOSIZE);
+		//在原图中画出矩形
+		Rect rect_IOR(194, 140, 137, 139); //正确
+		cv::rectangle(mat_src_gray, Point(194, 140), Point(330, 278), Scalar(100, 100, 100), 1, LINE_8,0);
+		cv::imshow("mat src with RECT", mat_src_gray);
+		cv::imwrite(str_img_path + "_withRect.jpg", mat_src_gray);
+		cv::waitKey(0);
+	}
 	int test3()
 	{
 		/// Create an image
@@ -462,42 +472,44 @@ protected:
 	{
 		double dMax_area = INT_MIN;
 		int flag_x_min = 0, flag_x_max = 0, flag_y_min = 0, flag_y_max = 0;
-		int nXmin = rect_bbox.x, nXmax = rect_bbox.x + rect_bbox.width;
-		int nYmin = rect_bbox.y, nYmax = rect_bbox.y + rect_bbox.height;
+		int nXmin = rect_bbox.x, nXmax = rect_bbox.x + rect_bbox.width - 1;
+		int nYmin = rect_bbox.y, nYmax = rect_bbox.y + rect_bbox.height - 1;
+		int nMin_dist_X = 2; //X方向两边界的最小间隔
+		int nMin_dist_Y = 2; //Y方向上两边界的最小间隔
 		for (int i = nXmin; i <= nXmax; ++i)
 		{
-			for (int j = i + 1; j <= nXmax; ++j)
+			for (int j = i + nMin_dist_X; j <= nXmax; ++j)
 			{
 				for (int m = nYmin; m <= nYmax; ++m)
 				{
 					//判定三条线所得的两个顶点是否在轮廓外
 					//根据灰度值来判定点是否在轮廓外
-					if (mat_src_binary_gray.at<uchar>(m, i) == 0 && mat_src_binary_gray.at<uchar>(m, i + 1) != 0
-						&& mat_src_binary_gray.at<uchar>(m + 1, i) != 0 && mat_src_binary_gray.at<uchar>(m + 1, i + 1) != 0)
-					{//至少有一个点在轮廓外
-						continue;
-					}
-					if (mat_src_binary_gray.at<uchar>(m, j) == 0 && mat_src_binary_gray.at<uchar>(m, j - 1) != 0
-						&& mat_src_binary_gray.at<uchar>(m +1, j) != 0 && mat_src_binary_gray.at<uchar>(m + 1, j - 1) != 0)
+// 					if (mat_src_binary_gray.at<uchar>(m, i) == 0 && mat_src_binary_gray.at<uchar>(m, i + 1) != 0
+// 						&& mat_src_binary_gray.at<uchar>(m + 1, i) != 0 && mat_src_binary_gray.at<uchar>(m + 1, i + 1) != 0)
+// 					{//至少有一个点在轮廓外
+// 						continue;
+// 					}
+// 					if (mat_src_binary_gray.at<uchar>(m, j) == 0 && mat_src_binary_gray.at<uchar>(m, j - 1) != 0
+// 						&& mat_src_binary_gray.at<uchar>(m +1, j) != 0 && mat_src_binary_gray.at<uchar>(m + 1, j - 1) != 0)
+// 					{
+// 						continue;
+// 					}
+					for (int n = m + nMin_dist_Y; n <= nYmax; ++n)
 					{
-						continue;
-					}
-					for (int n = m + 1; n <= nYmax; ++n)
-					{
-						if (mat_src_binary_gray.at<uchar>(n, i) == 0 && mat_src_binary_gray.at<uchar>(n, i + 1) != 0
-							&& mat_src_binary_gray.at<uchar>(n - 1, i) != 0 && mat_src_binary_gray.at<uchar>(n - 1, i + 1) != 0)
-						{//至少有一个点在轮廓外
-							continue;
-						}
-						if (mat_src_binary_gray.at<uchar>(n, j) == 0 && mat_src_binary_gray.at<uchar>(n, j - 1) != 0
-							&& mat_src_binary_gray.at<uchar>(n - 1, j) != 0 && mat_src_binary_gray.at<uchar>(n - 1, j - 1) != 0)
-						{
-							continue;
-						}
+// 						if (mat_src_binary_gray.at<uchar>(n, i) == 0 && mat_src_binary_gray.at<uchar>(n, i + 1) != 0
+// 							&& mat_src_binary_gray.at<uchar>(n - 1, i) != 0 && mat_src_binary_gray.at<uchar>(n - 1, i + 1) != 0)
+// 						{//至少有一个点在轮廓外
+// 							continue;
+// 						}
+// 						if (mat_src_binary_gray.at<uchar>(n, j) == 0 && mat_src_binary_gray.at<uchar>(n, j - 1) != 0
+// 							&& mat_src_binary_gray.at<uchar>(n - 1, j) != 0 && mat_src_binary_gray.at<uchar>(n - 1, j - 1) != 0)
+// 						{
+// 							continue;
+// 						}
 						if (no_black_in_rect(mat_src_binary_gray, i, j, m, n) == true)
 						{
 							//计算面积
-							double dArea_tmp = (j - i)*(n - m);
+							double dArea_tmp = (j - i + 1)*(n - m + 1);
 							if (dMax_area < dArea_tmp)
 							{
 								dMax_area = dArea_tmp;
@@ -516,8 +528,8 @@ protected:
 			}
 		}
 		std::cout << __FUNCTION__ << " | flag_x_min:" << flag_x_min << ", flag_x_max:" << flag_x_max 
-			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << endl;
-		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min, flag_y_max - flag_y_min);
+			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << ", dMax_area:" << dMax_area << endl;
+		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min + 1, flag_y_max - flag_y_min + 1);
 	}
 	//判定矩形四边是否含有黑色点，任一边含有黑色点都返回真
 	bool rect_edge_has_black(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
