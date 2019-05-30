@@ -82,7 +82,7 @@ public:
 		std::cout << __FUNCTION__ << " | MER:" << rect_MER << endl;
 		Rect rect_MER_MY(224, 138, 168, 79);
 		cv::rectangle(mat_src_gray, rect_MER_MY, Scalar(190, 0, 0),1, LINE_8,0);
-	    cv::imshow("mat src with MER", mat_src_gray);
+		cv::imshow("mat src with MER", mat_src_gray);
 		cv::waitKey(0);
 	}
 
@@ -131,7 +131,8 @@ public:
 		}
 		//计算轮廓的最小外包矩形
 		Rect rect_bbox =  cv::boundingRect(vec_max_area_contour);
-		Rect rect_MER = get_upRight_MER_using_traversing2(mat_src_gray, vec_max_area_contour, rect_bbox);
+		Rect rect_sub(231, 178, 69, 84);
+		Rect rect_MER = get_upRight_MER_using_traversing2(mat_src_gray, vec_max_area_contour, rect_bbox, rect_sub);
 		Time = (double)cvGetTickCount() - Time;
 		printf( "run time = %gms\n", Time /(cvGetTickFrequency()*1000) );//毫秒
 		//在原图中画出矩形
@@ -468,19 +469,23 @@ protected:
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << endl;
 		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min, flag_y_max - flag_y_min);
 	}
-	Rect get_upRight_MER_using_traversing2(const Mat& mat_src_binary_gray, const vector<Point>& contour,const Rect& rect_bbox)
+	//在子矩形和最小外接矩形之间来查找最大内接矩形
+	Rect get_upRight_MER_using_traversing2(const Mat& mat_src_binary_gray, const vector<Point>& contour,const Rect& rect_bbox
+		, const Rect& rect_sub)
 	{
 		double dMax_area = INT_MIN;
 		int flag_x_min = 0, flag_x_max = 0, flag_y_min = 0, flag_y_max = 0;
 		int nXmin = rect_bbox.x, nXmax = rect_bbox.x + rect_bbox.width - 1;
 		int nYmin = rect_bbox.y, nYmax = rect_bbox.y + rect_bbox.height - 1;
-		int nMin_dist_X = 2; //X方向两边界的最小间隔
+		int nSub_rect_MinX = rect_sub.x, nSub_rect_MaxX = rect_sub.x + rect_sub.width - 1;
+		int nSub_rect_MinY = rect_sub.y, nSub_rect_MaxY = rect_sub.y + rect_sub.height - 1;
+		int nMin_dist_X = 2; //X方向两边界的最小间隔，间隔值不可过大
 		int nMin_dist_Y = 2; //Y方向上两边界的最小间隔
-		for (int i = nXmin; i <= nXmax; ++i)
+		for (int i = nXmin; i <= nXmax && i <= nSub_rect_MinX; ++i)
 		{
-			for (int j = i + nMin_dist_X; j <= nXmax; ++j)
+			for (int j = nSub_rect_MaxX; j <= nXmax; ++j)
 			{
-				for (int m = nYmin; m <= nYmax; ++m)
+				for (int m = nYmin; m <= nYmax && m <= nSub_rect_MinY; ++m)
 				{
 					//判定三条线所得的两个顶点是否在轮廓外
 					//根据灰度值来判定点是否在轮廓外
@@ -494,7 +499,7 @@ protected:
 // 					{
 // 						continue;
 // 					}
-					for (int n = m + nMin_dist_Y; n <= nYmax; ++n)
+					for (int n = nSub_rect_MaxY; n <= nYmax; ++n)
 					{
 // 						if (mat_src_binary_gray.at<uchar>(n, i) == 0 && mat_src_binary_gray.at<uchar>(n, i + 1) != 0
 // 							&& mat_src_binary_gray.at<uchar>(n - 1, i) != 0 && mat_src_binary_gray.at<uchar>(n - 1, i + 1) != 0)
@@ -506,6 +511,7 @@ protected:
 // 						{
 // 							continue;
 // 						}
+					    //由于此时边界不是从最短距离开始的，有可能会跳过中间的黑点，导致错误。
 						if (no_black_in_rect(mat_src_binary_gray, i, j, m, n) == true)
 						{
 							//计算面积
@@ -573,7 +579,20 @@ protected:
 		}
 		return false;
 	}
-	//矩形内无黑色点
+
+	/************************************
+	* Method:    no_black_in_rect
+	* Brief:  判定矩形内是否无黑色点
+	* Access:    protected 
+	* Returns:   bool
+	* Qualifier: 目标二值灰度图中轮廓时连续的且轮廓内都为白色无黑色。
+	             思想：如果矩形的内测矩形上含有黑色点，则矩形内测有黑点；否则，矩形内测肯定无黑色点（连续性原理）
+	*Parameter: const Mat & mat_src_binary_gray -[in/out]  目标二值灰度图中轮廓时连续的且轮廓内都为白色无黑色
+	*Parameter: int nXmin -[in/out]  
+	*Parameter: int nXmax -[in/out]  
+	*Parameter: int nYmin -[in/out]  
+	*Parameter: int nYmax -[in/out]  
+	************************************/
 	bool no_black_in_rect(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
 	{
 		//上边
@@ -615,6 +634,7 @@ protected:
 		}
 		return true;
 	}
+
 	//点在轮廓外
 	bool is_out_of_contour(const Mat& mat_src_binary_gray, const vector<Point>& contour, const Point& p0)
 	{
