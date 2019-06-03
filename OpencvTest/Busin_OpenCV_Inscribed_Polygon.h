@@ -36,11 +36,13 @@ struct BG_Element
 	BG_Element()
 		: nBegin(0)
 		, nEnd(0)
+		, pNext(NULL)
 	{
 
 	}
 	size_t nBegin;
 	size_t nEnd;
+	BG_Element * pNext;
 };
 //类型定义
 class CInscribed_Polygon_Tool
@@ -479,6 +481,9 @@ protected:
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << endl;
 		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min, flag_y_max - flag_y_min);
 	}
+	BG_Element** x_flag_ptr; //x_flag_ptr[i]后面跟着的表节点表示在轮廓内，x=i中，线段((i,begin),（i,end）)之间都为白色
+//	boost::shared_ptr<BG_Element> y_flag_ptr;
+	BG_Element** y_flag_ptr;
 	//在子矩形和最小外接矩形之间来查找最大内接矩形
 	Rect get_upRight_MER_using_traversing2(const Mat& mat_src_binary_gray, const vector<Point>& contour,const Rect& rect_bbox
 		, const Rect& rect_sub)
@@ -489,6 +494,91 @@ protected:
 		int nYmin = rect_bbox.y, nYmax = rect_bbox.y + rect_bbox.height - 1;
 		int nSub_rect_MinX = rect_sub.x, nSub_rect_MaxX = rect_sub.x + rect_sub.width - 1;
 		int nSub_rect_MinY = rect_sub.y, nSub_rect_MaxY = rect_sub.y + rect_sub.height - 1;
+		//分配一个数组
+// 		x_flag_ptr.reset(new BG_Element*[rect_bbox.width]());
+// 		y_flag_ptr.reset(new BG_Element*[rect_bbox.height]());
+		x_flag_ptr = new BG_Element*[mat_src_binary_gray.cols];
+		memset(x_flag_ptr, 0, sizeof(BG_Element*) * mat_src_binary_gray.cols);
+		y_flag_ptr = new BG_Element*[mat_src_binary_gray.rows];
+		memset(y_flag_ptr, 0, sizeof(BG_Element*) * mat_src_binary_gray.rows);
+		for (int x = nXmin; x <= nXmax; ++x)
+		{
+			Point point_last_black_before_white; 
+			Point point_first_black_after_white;
+			bool has_begin = false; //一条白色线段的头顶点出现
+			bool has_end = false;//一条白色线段的尾顶点出现
+			//注意：一个线段的尾顶点可能为下一个线段的头顶点
+			for (int y = nYmin; y <= nYmax; ++y)
+			{
+				//从上往下逐行遍历
+				if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+				{//当前点为黑点
+					if (mat_src_binary_gray.at<uchar>(y + 1, x) != 0)
+					{//下一个点为白点
+						point_last_black_before_white = Point(x, y);
+						has_begin = true;
+					}
+					else if (has_begin== true && mat_src_binary_gray.at<uchar>(y - 1, x) != 0)
+					{//上一个点为白点
+						point_first_black_after_white = Point(x, y);
+						has_end = true;
+					}
+
+					if (has_begin == true && has_end == true)
+					{
+						BG_Element* p = new BG_Element;
+						p->nBegin = point_last_black_before_white.y;
+						p->nEnd = point_first_black_after_white.y;
+//						p->pNext = (x_flag_ptr.get() + x)->pNext;
+						p->pNext = x_flag_ptr[x];
+						x_flag_ptr[x] = p;
+						has_begin = false;
+						has_end = false;
+						//回退一格
+						--y;
+					}
+				}
+			}
+		}
+		for (int y = nYmin; y <= nYmax; ++y)
+		{
+			Point point_last_black_before_white; 
+			Point point_first_black_after_white;
+			bool has_begin = false; //一条白色线段的头顶点出现
+			bool has_end = false;//一条白色线段的尾顶点出现
+			for (int x = nXmin; x <= nXmax; ++x)
+			{
+				//从左往右逐列遍历
+				if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+				{
+					if (mat_src_binary_gray.at<uchar>(y, x + 1) != 0)
+					{//后一列点为白点
+						point_last_black_before_white = Point(x, y);
+						has_begin = true;
+					}
+					else if (has_begin == true && mat_src_binary_gray.at<uchar>(y, x - 1) != 0)
+					{//前一列点为白点
+						point_first_black_after_white = Point(x, y);
+						has_end = true;
+					}
+					if (has_begin == true && has_end == true)
+					{
+// 						(y_flag_ptr.get() + y)->nBegin = point_last_black_before_white.x;
+// 						(x_flag_ptr.get() + y)->nEnd = point_first_black_after_white.x;
+						BG_Element* p = new BG_Element;
+						p->nBegin = point_last_black_before_white.x;
+						p->nEnd = point_first_black_after_white.x;
+						p->pNext = y_flag_ptr[y];
+						y_flag_ptr[y] = p;
+						has_begin = false;
+						has_end = false;
+						//回退一格
+						--x;
+					}
+				}
+			}
+		}
+
 		int nMin_dist_X = 2; //X方向两边界的最小间隔，间隔值不可过大
 		int nMin_dist_Y = 2; //Y方向上两边界的最小间隔
 		for (int i = nXmin; i <= nXmax && i <= nSub_rect_MinX; ++i)
@@ -522,7 +612,7 @@ protected:
 							continue;
 						}
 					    //由于此时边界不是从最短距离开始的，有可能会跳过中间的黑点，导致错误。
-						if (no_black_in_rect(mat_src_binary_gray, i, j, m, n) == true)
+						if (no_black_in_rect2(mat_src_binary_gray, i, j, m, n) == true)
 						{
 							//计算面积
 							double dArea_tmp = (j - i + 1)*(n - m + 1);
@@ -589,7 +679,6 @@ protected:
 		}
 		return false;
 	}
-
 	/************************************
 	* Method:    no_black_in_rect
 	* Brief:  判定矩形内是否无黑色点
@@ -644,7 +733,58 @@ protected:
 		}
 		return true;
 	}
-
+	bool no_black_in_rect2(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
+	{
+		
+		BG_Element * p = NULL;
+		//上边((nXmin, nYmin + 1), (nXmax, nYmin + 1))之间有无黑点
+		p = y_flag_ptr[nYmin + 1];
+		bool bNo_black = no_black_on_line(p, nXmin, nXmax);
+		if (!bNo_black)
+		{
+			return false;
+		}
+		//右边
+		p = x_flag_ptr[nXmax - 1];
+		bNo_black = no_black_on_line(p, nYmin, nYmax);
+		if (!bNo_black)
+		{
+			return false;
+		}
+		
+		//下边
+		p = y_flag_ptr[nYmax - 1];
+		bNo_black = no_black_on_line(p, nXmin, nXmax);
+		if (!bNo_black)
+		{
+			return false;
+		}
+		//左边
+		p = x_flag_ptr[nXmin + 1];
+		bNo_black = no_black_on_line(p, nYmin, nYmax);
+		if (!bNo_black)
+		{
+			return false;
+		}
+		return true;
+	}
+	//（nA,nB）之间是否含有黑点
+	bool no_black_on_line(const BG_Element * p, size_t nA, size_t nB)
+	{
+		while (p != NULL)
+		{
+			if (nA >= p->nBegin && nB <= p->nEnd)
+			{//找到某个区间满足条件
+				return true;
+			}
+			else
+			{
+				p = p->pNext;
+			}
+		}
+		//未找到
+		return false;
+	}
 	//点在轮廓外
 	bool is_out_of_contour(const Mat& mat_src_binary_gray, const vector<Point>& contour, const Point& p0)
 	{
