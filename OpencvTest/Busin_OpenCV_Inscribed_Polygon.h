@@ -61,7 +61,8 @@ public:
 		threshold(mat_src_gray, mat_src_gray, 100, 255,THRESH_BINARY_INV);
 		cv::imshow("mat_src_gray", mat_src_gray);
 		//查找最大面积的轮廓
-		vector<Point> vec_max_area_contour = FindBiggestContour(mat_src_gray);
+		vector<Point> vec_max_area_contour;
+		int ret = FindBiggestContour(mat_src_gray, vec_max_area_contour);
 		if (vec_max_area_contour.empty())
 		{
 			printf("%s | error\n", __FUNCTION__);
@@ -78,7 +79,8 @@ public:
 		threshold(mat_src_gray, mat_src_gray, 100, 255,THRESH_BINARY_INV);
 		cv::imshow("mat_src_gray", mat_src_gray);
 		//查找最大面积的轮廓
-		vector<Point> vec_max_area_contour = FindBiggestContour(mat_src_gray);
+		vector<Point> vec_max_area_contour;
+		int ret = FindBiggestContour(mat_src_gray, vec_max_area_contour);
 		if (vec_max_area_contour.empty())
 		{
 			printf("%s | error\n", __FUNCTION__);
@@ -107,7 +109,8 @@ public:
 		threshold(mat_src_gray, mat_src_gray, 100, 255,THRESH_BINARY_INV);
 		cv::imshow("mat_src_gray", mat_src_gray);
 		//查找最大面积的轮廓
-		vector<Point> vec_max_area_contour = FindBiggestContour(mat_src_gray);
+		vector<Point> vec_max_area_contour;
+		int ret = FindBiggestContour(mat_src_gray, vec_max_area_contour);
 		if (vec_max_area_contour.empty())
 		{
 			printf("%s | error\n", __FUNCTION__);
@@ -129,32 +132,26 @@ public:
 	{
 		double Time = (double)cvGetTickCount();
 		const string str_img_path = "./images_for_MER/2.jpg";
-		Mat mat_src_gray = imread(str_img_path, IMREAD_GRAYSCALE);
-		Mat mat_src_gray_clone = mat_src_gray.clone();
-		cv::namedWindow("mat_src_gray", CV_WINDOW_AUTOSIZE);
-		threshold(mat_src_gray, mat_src_gray, 100, 255,THRESH_BINARY_INV);
-		imwrite(str_img_path+"_binary_gray.jpg", mat_src_gray);
-		cv::imshow("mat_src_gray", mat_src_gray);
-		//查找最大面积的轮廓
-		vector<Point> vec_max_area_contour = FindBiggestContour(mat_src_gray);
-		if (vec_max_area_contour.empty())
+		Mat mat_src_bgr = imread(str_img_path, IMREAD_COLOR);
+		
+		
+		Rect rect_sub(231, 178, 69, 84);
+		Rect rect_MER;
+		int ret = get_upRight_MER_using_traversing2(str_img_path, mat_src_bgr, rect_sub, rect_MER);
+		if (ret)
 		{
-			printf("%s | error\n", __FUNCTION__);
-			return;
+			std::cout << __FUNCTION__ << " | failed, ret:" << ret << endl;
 		}
-		//计算轮廓的最小外包矩形
-		Rect rect_bbox =  cv::boundingRect(vec_max_area_contour);
-		Rect rect_sub(327, 357, 44, 26);
-		Rect rect_MER = get_upRight_MER_using_traversing2(mat_src_gray, vec_max_area_contour, rect_bbox, rect_sub);
 		Time = (double)cvGetTickCount() - Time;
 		printf( "run time = %gms\n", Time /(cvGetTickFrequency()*1000) );//毫秒
 		//在原图中画出矩形
-		cv::rectangle(mat_src_gray_clone, rect_MER, Scalar(255, 255, 255), 1, LINE_8,0);
+		cv::rectangle(mat_src_bgr, rect_MER, Scalar(255, 255, 255), 1, LINE_8,0);
 		std::cout << __FUNCTION__ << " | MER:" << rect_MER << ", area:" << rect_MER.width * rect_MER.height << endl;
-		cv::imshow("mat src with MER", mat_src_gray_clone);
-		cv::imwrite(str_img_path + "_withMER.jpg", mat_src_gray_clone);
+		cv::imshow("mat src with MER", mat_src_bgr);
+		cv::imwrite(str_img_path + "_withMER.jpg", mat_src_bgr);
 		cv::waitKey(0);
 	}
+	
 	void test_rect()
 	{
 		const string str_img_path = "./images_for_MER/2.jpg_binary_gray.jpg";
@@ -224,7 +221,12 @@ public:
 			}
 		}
 		//get the biggest Contour
-		vector<Point> biggestContour = FindBiggestContour(src);
+		vector<Point> biggestContour;
+		int ret = FindBiggestContour(src, biggestContour);
+		if (ret)
+		{
+			std::cout <<__FUNCTION__ << " | failed, ret:" << ret << std::endl;
+		}
 		//find the maximum enclosed circle 
 		int dist = 0;
 		int maxdist = 0;
@@ -258,7 +260,8 @@ public:
 		threshold(temp,temp, 100, 255,THRESH_OTSU);
 		imshow("src",temp);
 		//寻找最大轮廓
-		vector<Point>  VPResult = FindBiggestContour(temp);
+		vector<Point>  VPResult; 
+		int ret = FindBiggestContour(temp, VPResult);
 		if (VPResult.empty())
 		{
 			printf("%s | error\n", __FUNCTION__);
@@ -313,19 +316,20 @@ protected:
 		return 0;
 	}
 	//图像为黑底
-	vector<Point> FindBiggestContour(const Mat& mat_src_gray)
+	int FindBiggestContour(const Mat& mat_src_gray, vector<Point>& vec_max_area_contour)
 	{    
 		int nCount = 0; //代表最大轮廓的序号
 		double dMax_area_contour = -1; //代表最大轮廓的面积大小
 		std::vector<std::vector<cv::Point>>contours;
 		findContours(mat_src_gray, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 		if (contours.empty())
-		{
+		{//未找到轮廓
 			printf("%s | Number of contours is 0\n", __FUNCTION__);
-			return vector<Point>();
+			return -1;
 		}
 		for (int i = 0; i < contours.size(); ++i)
 		{
+			//如果轮廓自交叉，则结果不准确
 			double dTemp_area =  contourArea(contours[i]);//这里采用的是轮廓大小
 			if (dMax_area_contour < dTemp_area )
 			{
@@ -338,7 +342,8 @@ protected:
 			cv::imshow("drawing", drawing);
 #endif // _DEBUG
 		}
-		return contours[nCount];
+		vec_max_area_contour = contours[nCount];
+		return 0;
 	}
 
 	/**
@@ -485,12 +490,38 @@ protected:
 	BG_Element** x_flag_ptr_Arr; //x_flag_ptr_Arr[i]后面跟着的表节点表示在轮廓内，x=i中，线段((i,begin),（i,end）)之间都为白色
 	BG_Element** y_flag_ptr_Arr;
 	//在子矩形和最小外接矩形之间来查找最大内接矩形
-	Rect get_upRight_MER_using_traversing2(const Mat& mat_src_binary_gray, const vector<Point>& contour,const Rect& rect_bbox
-		, const Rect& rect_sub)
+	int get_upRight_MER_using_traversing2(const string&str_img_path, const Mat& mat_src_bgr, const Rect& rect_sub, Rect& rect_MER)
 	{
-		if (mat_src_binary_gray.type() != CV_8UC1)
+		if (mat_src_bgr.type() != CV_8UC3)
 		{
-			std::cout << __FUNCTION__ << " | mat_src_binary_gray type:" << mat_src_binary_gray.type() << ", is not CV_8UC1:" << CV_8UC1 << std::endl; 
+			std::cout << __FUNCTION__ << " | type of mat_src_bgr:" << mat_src_bgr.type() << ", is not CV_8UC3:" << CV_8UC3 << std::endl; 
+			return -1;
+		}
+		//将BRG图片转换为灰度图
+		Mat mat_src_gray;
+		cv::cvtColor(mat_src_bgr, mat_src_gray, COLOR_BGR2GRAY);
+		//求二值灰度矩阵(黑色为底)
+		Mat mat_src_binary_gray;
+		cv::namedWindow("mat_src_binary_gray", CV_WINDOW_AUTOSIZE);
+		threshold(mat_src_gray, mat_src_binary_gray, 100, 255,THRESH_BINARY_INV);
+		imwrite(str_img_path+"_binary_gray.jpg", mat_src_binary_gray);
+		cv::imshow("mat_src_binary_gray", mat_src_binary_gray);
+
+		//查找最大面积的轮廓
+		vector<Point> vec_max_area_contour;
+		int ret = FindBiggestContour(mat_src_binary_gray, vec_max_area_contour);
+		if (ret)
+		{
+			printf("%s | error\n", __FUNCTION__);
+			return -1;
+		}
+
+		//计算轮廓的最小外包矩形
+		Rect rect_bbox =  cv::boundingRect(vec_max_area_contour);
+		if (rect_bbox.empty() || rect_bbox.height <= 0 || rect_bbox.width <= 0)
+		{
+			std::cout << __FUNCTION__ << " | failed to get bbox, rect_bbox:" << rect_bbox << endl; 
+			return -1;
 		}
 		double dMax_area = INT_MIN;
 		int flag_x_min = 0, flag_x_max = 0, flag_y_min = 0, flag_y_max = 0;
@@ -499,98 +530,8 @@ protected:
 		int nYmin = rect_bbox.y - 1, nYmax = rect_bbox.y + rect_bbox.height - 1 + 1;
 		int nSub_rect_MinX = rect_sub.x, nSub_rect_MaxX = rect_sub.x + rect_sub.width - 1; 
 		int nSub_rect_MinY = rect_sub.y, nSub_rect_MaxY = rect_sub.y + rect_sub.height - 1;
-		//分配一个数组
-		x_flag_ptr_Arr = new BG_Element*[mat_src_binary_gray.cols];
-		memset(x_flag_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.cols);
-		y_flag_ptr_Arr = new BG_Element*[mat_src_binary_gray.rows];
-		memset(y_flag_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.rows);
-		for (int x = nXmin; x <= nXmax; ++x)
-		{
-			Point point_last_black_before_white; 
-			Point point_first_black_after_white;
-			bool has_begin = false; //一条白色线段的头顶点出现
-			bool has_end = false;//一条白色线段的尾顶点出现
-			//注意：一个线段的尾顶点可能为下一个线段的头顶点
-			for (int y = nYmin; y <= nYmax; ++y)
-			{
-				//从上往下逐行遍历
-				if (mat_src_binary_gray.at<uchar>(y, x) == 0)
-				{//当前点为黑点
-					if (mat_src_binary_gray.at<uchar>(y + 1, x) != 0 && false == has_begin)
-					{//头结点未出现且下一个点为白点，则当前点肯定为头
-						point_last_black_before_white = Point(x, y);
-						has_begin = true;
-					}
-					else if (mat_src_binary_gray.at<uchar>(y - 1, x) != 0 && true == has_begin)
-					{//头结点出现且上一个点为白点，则当前点肯定为尾部
-						point_first_black_after_white = Point(x, y);
-						has_end = true;
-					}
-
-					if (has_begin == true && has_end == true)
-					{
-						BG_Element* p = new BG_Element;
-						p->nBegin = point_last_black_before_white.y;
-						p->nEnd = point_first_black_after_white.y;
-						p->pNext = x_flag_ptr_Arr[x];
-						x_flag_ptr_Arr[x] = p;
-						has_begin = false;
-						has_end = false;
-						//回退一格
-						--y;
-					}
-				}
-			}
-		}
-#ifdef PRINT_WHITE_LINE_ARR  //打印出白色线段对应的数组
-		for (int i = 0; i != mat_src_binary_gray.cols; ++i)
-		{
-			BG_Element* p = x_flag_ptr_Arr[i];
-			while (p != NULL)
-			{
-				std::cout << "col:" << i << ", (begin:" << p->nBegin << "," << p->nEnd << ") all white" << endl;
-				p = p->pNext;
-			}
-		}
-#endif // PRINT_WHITE_LINE_ARR
-		for (int y = nYmin; y <= nYmax; ++y)
-		{
-			Point point_last_black_before_white; 
-			Point point_first_black_after_white;
-			bool has_begin = false; //一条白色线段的头顶点出现
-			bool has_end = false;//一条白色线段的尾顶点出现
-			for (int x = nXmin; x <= nXmax; ++x)
-			{
-				//从左往右逐列遍历
-				if (mat_src_binary_gray.at<uchar>(y, x) == 0)
-				{
-					if (mat_src_binary_gray.at<uchar>(y, x + 1) != 0 && false == has_begin)
-					{//后一列点为白点且头未出现，则将其设置为头
-						point_last_black_before_white = Point(x, y);
-						has_begin = true;
-					}
-					else if (mat_src_binary_gray.at<uchar>(y, x - 1) != 0 && true == has_begin)
-					{//前一列点为白点且头出现了
-						point_first_black_after_white = Point(x, y);
-						has_end = true;
-					}
-					if (has_begin == true && has_end == true)
-					{
-						BG_Element* p = new BG_Element;
-						p->nBegin = point_last_black_before_white.x;
-						p->nEnd = point_first_black_after_white.x;
-						p->pNext = y_flag_ptr_Arr[y];
-						y_flag_ptr_Arr[y] = p;
-						has_begin = false;
-						has_end = false;
-						//回退一格
-						--x;
-					}
-				}
-			}
-		}
-#ifdef PRINT_WHITE_LINE_ARR  //打印出白色线段对应的数组
-#endif // PRINT_WHITE_LINE_ARR
+		//遍历二值灰度矩阵，分别获取X/Y方向上的白色线段区间
+		ret = get_white_line_arr(mat_src_binary_gray, x_flag_ptr_Arr, y_flag_ptr_Arr, nXmin, nXmax, nYmin, nYmax);
 		int nMin_dist_X = 2; //X方向两边界的最小间隔
 		int nMin_dist_Y = 2; //Y方向上两边界的最小间隔
 		for (int i = nXmin; i <= nXmax/* && i <= nSub_rect_MinX*/; ++i)
@@ -666,7 +607,8 @@ protected:
 		delete [] y_flag_ptr_Arr;
 		std::cout << __FUNCTION__ << " | flag_x_min:" << flag_x_min << ", flag_x_max:" << flag_x_max 
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << ", dMax_area:" << dMax_area << endl;
-		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min + 1, flag_y_max - flag_y_min + 1);
+		rect_MER =  Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min + 1, flag_y_max - flag_y_min + 1);
+		return 0;
 	}
 	//判定矩形四边是否含有黑色点，任一边含有黑色点都返回真
 	bool rect_edge_has_black(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
@@ -880,6 +822,111 @@ protected:
 		{
 			false;
 		}
+	}
+	int get_white_line_arr(const Mat& mat_src_binary_gray, BG_Element**& x_flag_ptr_Arr, BG_Element**& y_flag_ptr_Arr, int nXmin, int nXmax, int nYmin, int nYmax)
+	{
+		//分配一个数组
+		x_flag_ptr_Arr = new BG_Element*[mat_src_binary_gray.cols];
+		memset(x_flag_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.cols);
+		y_flag_ptr_Arr = new BG_Element*[mat_src_binary_gray.rows];
+		memset(y_flag_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.rows);
+		for (int x = nXmin; x <= nXmax; ++x)
+		{
+			Point point_last_black_before_white; 
+			Point point_first_black_after_white;
+			bool has_begin = false; //一条白色线段的头顶点出现
+			bool has_end = false;//一条白色线段的尾顶点出现
+			//注意：一个线段的尾顶点可能为下一个线段的头顶点
+			for (int y = nYmin; y <= nYmax; ++y)
+			{
+				//从上往下逐行遍历
+				if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+				{//当前点为黑点
+					if (mat_src_binary_gray.at<uchar>(y + 1, x) != 0 && false == has_begin)
+					{//头结点未出现且下一个点为白点，则当前点肯定为头
+						point_last_black_before_white = Point(x, y);
+						has_begin = true;
+					}
+					else if (mat_src_binary_gray.at<uchar>(y - 1, x) != 0 && true == has_begin)
+					{//头结点出现且上一个点为白点，则当前点肯定为尾部
+						point_first_black_after_white = Point(x, y);
+						has_end = true;
+					}
+
+					if (has_begin == true && has_end == true)
+					{
+						BG_Element* p = new BG_Element;
+						p->nBegin = point_last_black_before_white.y;
+						p->nEnd = point_first_black_after_white.y;
+						p->pNext = x_flag_ptr_Arr[x];
+						x_flag_ptr_Arr[x] = p;
+						has_begin = false;
+						has_end = false;
+						//回退一格
+						--y;
+					}
+				}
+			}
+		}
+#ifdef PRINT_WHITE_LINE_ARR  //打印出白色线段对应的数组
+		for (int i = 0; i != mat_src_binary_gray.cols; ++i)
+		{
+			BG_Element* p = x_flag_ptr_Arr[i];
+			while (p != NULL)
+			{
+				std::cout << "col:" << i << ", (" << p->nBegin << "," << p->nEnd << ") all white" << endl;
+				p = p->pNext;
+			}
+		}
+#endif // PRINT_WHITE_LINE_ARR
+		for (int y = nYmin; y <= nYmax; ++y)
+		{
+			Point point_last_black_before_white; 
+			Point point_first_black_after_white;
+			bool has_begin = false; //一条白色线段的头顶点出现
+			bool has_end = false;//一条白色线段的尾顶点出现
+			for (int x = nXmin; x <= nXmax; ++x)
+			{
+				//从左往右逐列遍历
+				if (mat_src_binary_gray.at<uchar>(y, x) == 0)
+				{
+					if (mat_src_binary_gray.at<uchar>(y, x + 1) != 0 && false == has_begin)
+					{//后一列点为白点且头未出现，则将其设置为头
+						point_last_black_before_white = Point(x, y);
+						has_begin = true;
+					}
+					else if (mat_src_binary_gray.at<uchar>(y, x - 1) != 0 && true == has_begin)
+					{//前一列点为白点且头出现了
+						point_first_black_after_white = Point(x, y);
+						has_end = true;
+					}
+					if (has_begin == true && has_end == true)
+					{
+						BG_Element* p = new BG_Element;
+						p->nBegin = point_last_black_before_white.x;
+						p->nEnd = point_first_black_after_white.x;
+						p->pNext = y_flag_ptr_Arr[y];
+						y_flag_ptr_Arr[y] = p;
+						has_begin = false;
+						has_end = false;
+						//回退一格
+						--x;
+					}
+				}
+			}
+		}
+#ifdef PRINT_WHITE_LINE_ARR  //打印出白色线段对应的数组
+		for (int i = 0; i != mat_src_binary_gray.rows; ++i)
+		{
+			BG_Element* p = y_flag_ptr_Arr[i];
+			while (p != NULL)
+			{
+				std::cout << "row:" << i << ", (" << p->nBegin << "," << p->nEnd << ") all white" << endl;
+				p = p->pNext;
+			}
+		}
+#endif // PRINT_WHITE_LINE_ARR
+		return 0;
 	}
 private:
 };

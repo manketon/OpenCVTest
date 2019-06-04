@@ -269,14 +269,14 @@ int test_gray_mat()
 void test_nonKXJSF()
 {
 	ostringstream oss;
-	float fVal = 0.00001;
+	double fVal = 0.00001;
 	oss << setiosflags(ios::fixed) << fVal;
 	std::cout << oss.str() << endl;
 }
 void test_create_mat()
 {
 	//从一个已知数组中构造矩阵
-	float arr_f1[3][3] = { 0.1, 0.1, 0.1
+	double arr_f1[3][3] = { 0.1, 0.1, 0.1
 	                     , 0.2, 0.2, 0.2
 	                     , 0.3, 0.3, 0.3};
 	Mat mat_f1(3, 3, CV_32FC1, arr_f1);
