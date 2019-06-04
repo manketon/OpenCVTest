@@ -529,7 +529,7 @@ protected:
 		int nYmin = rect_bbox.y - 1, nYmax = rect_bbox.y + rect_bbox.height - 1 + 1;
 		int nSub_rect_MinX = rect_sub.x, nSub_rect_MaxX = rect_sub.x + rect_sub.width - 1; 
 		int nSub_rect_MinY = rect_sub.y, nSub_rect_MaxY = rect_sub.y + rect_sub.height - 1;
-		BG_Element** x_white_line_ptr_Arr = NULL; //x_flag_ptr_Arr[i]后面跟着的表节点表示在轮廓内，x=i中，线段[(i,begin),（i,end)]之间都为白色
+		BG_Element** x_white_line_ptr_Arr = NULL; //x_white_line_ptr_Arr[i]后面跟着的表节点表示在轮廓内，x=i中，线段[(i,begin),（i,end)]之间都为白色
 		BG_Element** y_white_line_ptr_Arr = NULL;
 
 		//遍历二值灰度矩阵，分别获取X/Y方向上的白色线段区间
@@ -584,29 +584,7 @@ protected:
 				}
 			}
 		}
-		//释放内存
-		for (int i = 0; i != mat_src_binary_gray.cols; ++i)
-		{
-			BG_Element* p = x_white_line_ptr_Arr[i];
-			while (p != NULL)
-			{
-				x_white_line_ptr_Arr[i] = p->pNext;
-				delete p;
-				p = x_white_line_ptr_Arr[i];
-			}
-		}
-		delete [] x_white_line_ptr_Arr;
-		for (int i = 0; i != mat_src_binary_gray.rows; ++i)
-		{
-			BG_Element* p = y_white_line_ptr_Arr[i];
-			while (p != NULL)
-			{
-				y_white_line_ptr_Arr[i] = p->pNext;
-				delete p;
-				p = y_white_line_ptr_Arr[i];
-			}
-		}
-		delete [] y_white_line_ptr_Arr;
+		ret = release_white_line_arr(mat_src_binary_gray.size(), x_white_line_ptr_Arr, y_white_line_ptr_Arr);
 		std::cout << __FUNCTION__ << " | flag_x_min:" << flag_x_min << ", flag_x_max:" << flag_x_max 
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << ", dMax_area:" << dMax_area << endl;
 		rect_MER =  Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min + 1, flag_y_max - flag_y_min + 1);
@@ -737,13 +715,13 @@ protected:
 			false;
 		}
 	}
-	int get_white_line_arr(const Mat& mat_src_binary_gray, BG_Element**& x_flag_ptr_Arr, BG_Element**& y_flag_ptr_Arr, int nXmin, int nXmax, int nYmin, int nYmax)
+	int get_white_line_arr(const Mat& mat_src_binary_gray, BG_Element**& x_white_line_ptr_Arr, BG_Element**& y_white_line_ptr_Arr, int nXmin, int nXmax, int nYmin, int nYmax)
 	{
 		//分配一个数组
-		x_flag_ptr_Arr = new BG_Element*[mat_src_binary_gray.cols];
-		memset(x_flag_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.cols);
-		y_flag_ptr_Arr = new BG_Element*[mat_src_binary_gray.rows];
-		memset(y_flag_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.rows);
+		x_white_line_ptr_Arr = new BG_Element*[mat_src_binary_gray.cols];
+		memset(x_white_line_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.cols);
+		y_white_line_ptr_Arr = new BG_Element*[mat_src_binary_gray.rows];
+		memset(y_white_line_ptr_Arr, 0, sizeof(BG_Element*) * mat_src_binary_gray.rows);
 		for (int x = nXmin; x <= nXmax; ++x)
 		{
 			Point point_last_black_before_white; 
@@ -772,8 +750,8 @@ protected:
 						BG_Element* p = new BG_Element;
 						p->nBegin = point_last_black_before_white.y + 1;
 						p->nEnd = point_first_black_after_white.y - 1;
-						p->pNext = x_flag_ptr_Arr[x];
-						x_flag_ptr_Arr[x] = p;
+						p->pNext = x_white_line_ptr_Arr[x];
+						x_white_line_ptr_Arr[x] = p;
 						has_begin = false;
 						has_end = false;
 						//回退一格
@@ -785,7 +763,7 @@ protected:
 #ifdef PRINT_WHITE_LINE_ARR  //打印出白色线段对应的数组
 		for (int i = 0; i != mat_src_binary_gray.cols; ++i)
 		{
-			BG_Element* p = x_flag_ptr_Arr[i];
+			BG_Element* p = x_white_line_ptr_Arr[i];
 			while (p != NULL)
 			{
 				std::cout << "col:" << i << ", [" << p->nBegin << "," << p->nEnd << "] all white" << endl;
@@ -819,8 +797,8 @@ protected:
 						BG_Element* p = new BG_Element;
 						p->nBegin = point_last_black_before_white.x + 1;
 						p->nEnd = point_first_black_after_white.x - 1;
-						p->pNext = y_flag_ptr_Arr[y];
-						y_flag_ptr_Arr[y] = p;
+						p->pNext = y_white_line_ptr_Arr[y];
+						y_white_line_ptr_Arr[y] = p;
 						has_begin = false;
 						has_end = false;
 						//回退一格
@@ -832,7 +810,7 @@ protected:
 #ifdef PRINT_WHITE_LINE_ARR  //打印出白色线段对应的数组
 		for (int i = 0; i != mat_src_binary_gray.rows; ++i)
 		{
-			BG_Element* p = y_flag_ptr_Arr[i];
+			BG_Element* p = y_white_line_ptr_Arr[i];
 			while (p != NULL)
 			{
 				std::cout << "row:" << i << ", [" << p->nBegin << "," << p->nEnd << "] all white" << endl;
@@ -840,6 +818,33 @@ protected:
 			}
 		}
 #endif // PRINT_WHITE_LINE_ARR
+		return 0;
+	}
+	int release_white_line_arr(const cv::Size& size_of_binary_gray_img, BG_Element**& x_white_line_ptr_Arr, BG_Element**& y_white_line_ptr_Arr)
+	{
+		//释放内存
+		for (int i = 0; i != size_of_binary_gray_img.width; ++i)
+		{
+			BG_Element* p = x_white_line_ptr_Arr[i];
+			while (p != NULL)
+			{
+				x_white_line_ptr_Arr[i] = p->pNext;
+				delete p;
+				p = x_white_line_ptr_Arr[i];
+			}
+		}
+		delete [] x_white_line_ptr_Arr;
+		for (int i = 0; i != size_of_binary_gray_img.height; ++i)
+		{
+			BG_Element* p = y_white_line_ptr_Arr[i];
+			while (p != NULL)
+			{
+				y_white_line_ptr_Arr[i] = p->pNext;
+				delete p;
+				p = y_white_line_ptr_Arr[i];
+			}
+		}
+		delete [] y_white_line_ptr_Arr;
 		return 0;
 	}
 private:
