@@ -131,7 +131,7 @@ public:
 	void test_max_inscribed_rect_using_traversing2()
 	{
 		double Time = (double)cvGetTickCount();
-		const string str_img_path = "./images_for_MER/2.jpg";
+		const string str_img_path = "./images_for_MER/2_rotated.jpg";
 		Mat mat_src_bgr = imread(str_img_path, IMREAD_COLOR);
 		
 		
@@ -487,8 +487,7 @@ protected:
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << endl;
 		return Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min, flag_y_max - flag_y_min);
 	}
-	BG_Element** x_flag_ptr_Arr; //x_flag_ptr_Arr[i]后面跟着的表节点表示在轮廓内，x=i中，线段((i,begin),（i,end）)之间都为白色
-	BG_Element** y_flag_ptr_Arr;
+
 	//在子矩形和最小外接矩形之间来查找最大内接矩形
 	int get_upRight_MER_using_traversing2(const string&str_img_path, const Mat& mat_src_bgr, const Rect& rect_sub, Rect& rect_MER)
 	{
@@ -506,7 +505,7 @@ protected:
 		threshold(mat_src_gray, mat_src_binary_gray, 100, 255,THRESH_BINARY_INV);
 		imwrite(str_img_path+"_binary_gray.jpg", mat_src_binary_gray);
 		cv::imshow("mat_src_binary_gray", mat_src_binary_gray);
-
+		//最大面积的内接矩形肯定在最大面积的轮廓中，故先查找最大面积的轮廓
 		//查找最大面积的轮廓
 		vector<Point> vec_max_area_contour;
 		int ret = FindBiggestContour(mat_src_binary_gray, vec_max_area_contour);
@@ -516,7 +515,7 @@ protected:
 			return -1;
 		}
 
-		//计算轮廓的最小外包矩形
+		//计算最大面积的轮廓对应的最小外包矩形
 		Rect rect_bbox =  cv::boundingRect(vec_max_area_contour);
 		if (rect_bbox.empty() || rect_bbox.height <= 0 || rect_bbox.width <= 0)
 		{
@@ -530,8 +529,11 @@ protected:
 		int nYmin = rect_bbox.y - 1, nYmax = rect_bbox.y + rect_bbox.height - 1 + 1;
 		int nSub_rect_MinX = rect_sub.x, nSub_rect_MaxX = rect_sub.x + rect_sub.width - 1; 
 		int nSub_rect_MinY = rect_sub.y, nSub_rect_MaxY = rect_sub.y + rect_sub.height - 1;
+		BG_Element** x_white_line_ptr_Arr = NULL; //x_flag_ptr_Arr[i]后面跟着的表节点表示在轮廓内，x=i中，线段[(i,begin),（i,end)]之间都为白色
+		BG_Element** y_white_line_ptr_Arr = NULL;
+
 		//遍历二值灰度矩阵，分别获取X/Y方向上的白色线段区间
-		ret = get_white_line_arr(mat_src_binary_gray, x_flag_ptr_Arr, y_flag_ptr_Arr, nXmin, nXmax, nYmin, nYmax);
+		ret = get_white_line_arr(mat_src_binary_gray, x_white_line_ptr_Arr, y_white_line_ptr_Arr, nXmin, nXmax, nYmin, nYmax);
 		int nMin_dist_X = 2; //X方向两边界的最小间隔
 		int nMin_dist_Y = 2; //Y方向上两边界的最小间隔
 		for (int i = nXmin; i <= nXmax/* && i <= nSub_rect_MinX*/; ++i)
@@ -561,7 +563,7 @@ protected:
 							continue;
 						}
 					    //使用rect_edge_has_black成功
-						if (rect_edge_has_black2(mat_src_binary_gray, i, j, m, n) == false)
+						if (rect_edge_has_black2(mat_src_binary_gray, x_white_line_ptr_Arr, y_white_line_ptr_Arr, i, j, m, n) == false)
 						{
 							//计算面积
 							double dArea_tmp = (j - i + 1)*(n - m + 1);
@@ -585,26 +587,26 @@ protected:
 		//释放内存
 		for (int i = 0; i != mat_src_binary_gray.cols; ++i)
 		{
-			BG_Element* p = x_flag_ptr_Arr[i];
+			BG_Element* p = x_white_line_ptr_Arr[i];
 			while (p != NULL)
 			{
-				x_flag_ptr_Arr[i] = p->pNext;
+				x_white_line_ptr_Arr[i] = p->pNext;
 				delete p;
-				p = x_flag_ptr_Arr[i];
+				p = x_white_line_ptr_Arr[i];
 			}
 		}
-		delete [] x_flag_ptr_Arr;
+		delete [] x_white_line_ptr_Arr;
 		for (int i = 0; i != mat_src_binary_gray.rows; ++i)
 		{
-			BG_Element* p = y_flag_ptr_Arr[i];
+			BG_Element* p = y_white_line_ptr_Arr[i];
 			while (p != NULL)
 			{
-				y_flag_ptr_Arr[i] = p->pNext;
+				y_white_line_ptr_Arr[i] = p->pNext;
 				delete p;
-				p = y_flag_ptr_Arr[i];
+				p = y_white_line_ptr_Arr[i];
 			}
 		}
-		delete [] y_flag_ptr_Arr;
+		delete [] y_white_line_ptr_Arr;
 		std::cout << __FUNCTION__ << " | flag_x_min:" << flag_x_min << ", flag_x_max:" << flag_x_max 
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << ", dMax_area:" << dMax_area << endl;
 		rect_MER =  Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min + 1, flag_y_max - flag_y_min + 1);
@@ -652,124 +654,36 @@ protected:
 		}
 		return false;
 	}
-	/************************************
-	* Method:    no_black_in_rect
-	* Brief:  判定矩形内是否无黑色点
-	* Access:    protected 
-	* Returns:   bool
-	* Qualifier: 目标二值灰度图中轮廓时连续的且轮廓内都为白色无黑色。
-	             思想：如果矩形的内测矩形上含有黑色点，则矩形内测有黑点；否则，矩形内测肯定无黑色点（连续性原理）
-	*Parameter: const Mat & mat_src_binary_gray -[in/out]  目标二值灰度图中轮廓时连续的且轮廓内都为白色无黑色
-	*Parameter: int nXmin -[in/out]  
-	*Parameter: int nXmax -[in/out]  
-	*Parameter: int nYmin -[in/out]  
-	*Parameter: int nYmax -[in/out]  
-	************************************/
-	bool no_black_in_rect(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
+	
+	bool rect_edge_has_black2(const Mat& mat_src_binary_gray, BG_Element**&x_white_line_ptr_Arr, BG_Element**&y_while_line_ptr_Arr
+		, int nXmin, int nXmax, int nYmin, int nYmax)
 	{
-		//上边
-		int y = nYmin + 1;
-		int x = 0;
-		for ( x = nXmin + 1; x < nXmax; ++x)
-		{
-			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
-			{//为黑色
-				return false;
-			}
-		}
-		//右边
-		x = nXmax - 1;
-		for (y = nYmin + 1; y < nYmax; ++y)
-		{
-			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
-			{//为黑色
-				return false;
-			}
-		}
-		//下边
-		y = nYmax - 1;
-		for ( x = nXmin + 1; x < nXmax; ++x)
-		{
-			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
-			{//为黑色
-				return false;
-			}
-		}
-		//左边
-		x = nXmin + 1;
-		for (y = nYmin + 1; y < nYmax; ++y)
-		{
-			if (mat_src_binary_gray.at<uchar>(y, x) == 0)
-			{//为黑色
-				return false;
-			}
-		}
-		return true;
-	}
-	bool no_black_in_rect2(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
-	{
-		
 		BG_Element * p = NULL;
-		//上边((nXmin, nYmin + 1), (nXmax, nYmin + 1))之间有无黑点
-		p = y_flag_ptr_Arr[nYmin + 1];
-		bool bNo_black = no_black_on_line(p, nXmin, nXmax);
+		//上边[(nXmin, nYmin), (nXmax, nYmin)]之间有无黑点
+		p = y_while_line_ptr_Arr[nYmin];
+		bool bNo_black = no_black_on_line(p, nXmin , nXmax);
 		if (!bNo_black)
 		{
-			return false;
+			return true;
 		}
 		//右边
-		p = x_flag_ptr_Arr[nXmax - 1];
+		p = x_white_line_ptr_Arr[nXmax];
 		bNo_black = no_black_on_line(p, nYmin, nYmax);
 		if (!bNo_black)
 		{
-			return false;
+			return true;
 		}
-		
+
 		//下边
-		p = y_flag_ptr_Arr[nYmax - 1];
+		p = y_while_line_ptr_Arr[nYmax];
 		bNo_black = no_black_on_line(p, nXmin, nXmax);
 		if (!bNo_black)
 		{
-			return false;
+			return true;
 		}
 		//左边
-		p = x_flag_ptr_Arr[nXmin + 1];
+		p = x_white_line_ptr_Arr[nXmin];
 		bNo_black = no_black_on_line(p, nYmin, nYmax);
-		if (!bNo_black)
-		{
-			return false;
-		}
-		return true;
-	}
-
-	bool rect_edge_has_black2(const Mat& mat_src_binary_gray, int nXmin, int nXmax, int nYmin, int nYmax)
-	{
-		BG_Element * p = NULL;
-		//上边((nXmin - 1, nYmin), (nXmax + 1, nYmin))之间有无黑点
-		p = y_flag_ptr_Arr[nYmin];
-		bool bNo_black = no_black_on_line(p, nXmin - 1, nXmax + 1);
-		if (!bNo_black)
-		{
-			return true;
-		}
-		//右边
-		p = x_flag_ptr_Arr[nXmax];
-		bNo_black = no_black_on_line(p, nYmin - 1, nYmax + 1);
-		if (!bNo_black)
-		{
-			return true;
-		}
-
-		//下边
-		p = y_flag_ptr_Arr[nYmax];
-		bNo_black = no_black_on_line(p, nXmin - 1, nXmax + 1);
-		if (!bNo_black)
-		{
-			return true;
-		}
-		//左边
-		p = x_flag_ptr_Arr[nXmin];
-		bNo_black = no_black_on_line(p, nYmin - 1, nYmax + 1);
 		if (!bNo_black)
 		{
 			return true;
@@ -856,8 +770,8 @@ protected:
 					if (has_begin == true && has_end == true)
 					{
 						BG_Element* p = new BG_Element;
-						p->nBegin = point_last_black_before_white.y;
-						p->nEnd = point_first_black_after_white.y;
+						p->nBegin = point_last_black_before_white.y + 1;
+						p->nEnd = point_first_black_after_white.y - 1;
 						p->pNext = x_flag_ptr_Arr[x];
 						x_flag_ptr_Arr[x] = p;
 						has_begin = false;
@@ -874,7 +788,7 @@ protected:
 			BG_Element* p = x_flag_ptr_Arr[i];
 			while (p != NULL)
 			{
-				std::cout << "col:" << i << ", (" << p->nBegin << "," << p->nEnd << ") all white" << endl;
+				std::cout << "col:" << i << ", [" << p->nBegin << "," << p->nEnd << "] all white" << endl;
 				p = p->pNext;
 			}
 		}
@@ -903,8 +817,8 @@ protected:
 					if (has_begin == true && has_end == true)
 					{
 						BG_Element* p = new BG_Element;
-						p->nBegin = point_last_black_before_white.x;
-						p->nEnd = point_first_black_after_white.x;
+						p->nBegin = point_last_black_before_white.x + 1;
+						p->nEnd = point_first_black_after_white.x - 1;
 						p->pNext = y_flag_ptr_Arr[y];
 						y_flag_ptr_Arr[y] = p;
 						has_begin = false;
@@ -921,7 +835,7 @@ protected:
 			BG_Element* p = y_flag_ptr_Arr[i];
 			while (p != NULL)
 			{
-				std::cout << "row:" << i << ", (" << p->nBegin << "," << p->nEnd << ") all white" << endl;
+				std::cout << "row:" << i << ", [" << p->nBegin << "," << p->nEnd << "] all white" << endl;
 				p = p->pNext;
 			}
 		}
