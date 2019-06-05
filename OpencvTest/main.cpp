@@ -287,6 +287,16 @@ void test_create_mat()
 	Rect my_rect(0, 0, 2, 2);
 	Mat mat_ri(mat_f1, my_rect);
 }
+void test_create_black_background_img()
+{
+	string str_img_path = "./images_for_MER/2_rotated.jpg";
+	Mat mat_src_gray = imread(str_img_path, COLOR_BGR2GRAY);
+	//求二值灰度矩阵(黑色为底)
+	Mat mat_src_binary_gray;
+	threshold(mat_src_gray, mat_src_binary_gray, 100, 255,THRESH_BINARY_INV);
+//	cvtColor(mat_src_binary_gray, mat_src_binary_gray, COLOR_GRAY2BGR);
+	imwrite(str_img_path+"_binary_gray.jpg", mat_src_binary_gray);
+}
 int main(int argc, char** argv)
 {
 	try
@@ -310,7 +320,7 @@ int main(int argc, char** argv)
 //		test_gray_mat();
 //		CBusin_OpenCV_Contour_Tool::instance().test("F:/project/Programming_Test/OpencvTest/OpencvTest/images_src/guxiaowei.jpg");
 	    CInscribed_Polygon_Tool::instace().test_max_inscribed_rect_using_traversing2();
-
+//		test_create_black_background_img();
 	}
 	catch (std::exception& e)
 	{

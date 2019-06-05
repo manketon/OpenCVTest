@@ -185,18 +185,18 @@ public:
 		std::cout << __FUNCTION__ << " | MER:" << rect_MER_with_max_area << ", area:" << rect_MER_with_max_area.area() 
 			<< ", dDegree_with_max_area:" << dDegree_with_max_area << endl;
 		//此时的最大面积矩阵逆向旋转（注意：此时图片的分辨率发生了变化，并且应该以旋转后的中心点来旋转）
-		Mat mat_withMER = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
-			mat_with_max_area, rRect_min_area.center/*中心点旋转错误*/, -1 * dDegree_with_max_area, 1);
-		cv::imshow("mat src with MER", mat_withMER);
-		cv::imwrite(str_img_path + "_withMER.jpg", mat_withMER);
-// 		cv::imshow("mat src with MER", mat_with_max_area);
-// 		cv::imwrite(str_img_path + "_withMER.jpg", mat_with_max_area);
+// 		Mat mat_withMER = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
+// 			mat_with_max_area, rRect_min_area.center/*中心点旋转错误*/, -1 * dDegree_with_max_area, 1);
+// 		cv::imshow("mat src with MER", mat_withMER);
+// 		cv::imwrite(str_img_path + "_withMER.jpg", mat_withMER);
+		cv::imshow("mat_max_area with MER", mat_with_max_area);
+		cv::imwrite(str_img_path + "_withMER.jpg", mat_with_max_area);
 		cv::waitKey(0);
 	}
 	void test_max_inscribed_rect_using_traversing2()
 	{
 		double Time = (double)cvGetTickCount();
-		const string str_img_path = "./images_for_MER/2_rotated.jpg";
+		const string str_img_path = "./images_for_MER/2.jpg";
 		Mat mat_src_bgr = imread(str_img_path, IMREAD_COLOR);
 
 
@@ -209,10 +209,10 @@ public:
 		}
 		Time = (double)cvGetTickCount() - Time;
 		printf( "run time = %gms\n", Time /(cvGetTickFrequency()*1000) );//毫秒
-		//在原图中画出矩形
-		cv::rectangle(mat_src_bgr, rect_MER, Scalar(255, 255, 255), 1, LINE_8,0);
+		//注意应该在黑底图中画出矩形
+		cv::rectangle(mat_src_bgr, rect_MER, Scalar(100, 100, 100), 1, LINE_8,0);
 		std::cout << __FUNCTION__ << " | MER:" << rect_MER << ", area:" << rect_MER.width * rect_MER.height << endl;
-		cv::imshow("mat src with MER", mat_src_bgr);
+		cv::imshow("mat src gray with MER", mat_src_bgr);
 		cv::imwrite(str_img_path + "_withMER.jpg", mat_src_bgr);
 		cv::waitKey(0);
 	}
