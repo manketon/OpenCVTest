@@ -128,13 +128,78 @@ public:
 		cv::imshow("mat src with MER", mat_src_gray);
 		cv::waitKey(0);
 	}
+	//TODO::颜色这块后面统一修改下输入为黑色底
+	void test_max_inscribed_rect_using_traversing_for_rotated()
+	{
+		double Time = (double)cvGetTickCount();
+		const string str_img_path = "./images_for_MER/2_rotated.jpg";
+		Mat mat_src_bgr = imread(str_img_path, IMREAD_COLOR);
+		//将原图转换为灰度图
+		Mat mat_src_gray;
+		cvtColor(mat_src_bgr, mat_src_gray, COLOR_BGR2GRAY);
+		//查找最大面积的轮廓
+		//求二值灰度矩阵(黑色为底)
+		Mat mat_src_binary_gray;
+		threshold(mat_src_gray, mat_src_binary_gray, 100, 255,THRESH_BINARY_INV);
+		cv::imshow("mat_src_binary_gray", mat_src_binary_gray);
+		//最大面积的内接矩形肯定在最大面积的轮廓中，故先查找最大面积的轮廓
+		//查找最大面积的轮廓
+		vector<Point> vec_max_area_contour;
+		int ret = FindBiggestContour(mat_src_binary_gray, vec_max_area_contour);
+		if (ret)
+		{
+			printf("%s | error\n", __FUNCTION__);
+			return;
+		}
+		RotatedRect rRect_min_area = cv::minAreaRect(vec_max_area_contour);
+		Mat mat_with_max_area;
+		Rect rect_MER_with_max_area;
+		double dDegree_with_max_area = 0;
+		for (double dDegree = 0; dDegree <= 90; dDegree += 1)
+		{
+			//TODO::后面需要将rotate_image_without_loss的边界颜色修改为scale(0,0,0)
+			Mat mat_rotated = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
+				mat_src_bgr, rRect_min_area.center, dDegree, 1);
+
+			Rect rect_sub(231, 178, 69, 84);
+			Rect rect_MER;
+			int ret = get_upRight_MER_using_traversing2(str_img_path, mat_rotated, rect_sub, rect_MER);
+			if (ret)
+			{
+				std::cout << __FUNCTION__ << " | failed, ret:" << ret << endl;
+			}
+			if (rect_MER.area() > rect_MER_with_max_area.area())
+			{
+				mat_with_max_area = mat_rotated.clone();
+				rect_MER_with_max_area = rect_MER;
+				dDegree_with_max_area = dDegree;
+			}
+//			cv::waitKey(0);
+		}
+		Time = (double)cvGetTickCount() - Time;
+		printf( "run time = %gms\n", Time /(cvGetTickFrequency()*1000) );//毫秒
+
+		//最大面积对应的矩阵中画出矩阵
+		//TODO::黑底时则需要修改为Scalar(0, 0, 0)
+		cv::rectangle(mat_with_max_area, rect_MER_with_max_area, Scalar(255, 255, 255), 1, LINE_8,0);
+		std::cout << __FUNCTION__ << " | MER:" << rect_MER_with_max_area << ", area:" << rect_MER_with_max_area.area() 
+			<< ", dDegree_with_max_area:" << dDegree_with_max_area << endl;
+		//此时的最大面积矩阵逆向旋转（注意：此时图片的分辨率发生了变化，并且应该以旋转后的中心点来旋转）
+		Mat mat_withMER = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
+			mat_with_max_area, rRect_min_area.center/*中心点旋转错误*/, -1 * dDegree_with_max_area, 1);
+		cv::imshow("mat src with MER", mat_withMER);
+		cv::imwrite(str_img_path + "_withMER.jpg", mat_withMER);
+// 		cv::imshow("mat src with MER", mat_with_max_area);
+// 		cv::imwrite(str_img_path + "_withMER.jpg", mat_with_max_area);
+		cv::waitKey(0);
+	}
 	void test_max_inscribed_rect_using_traversing2()
 	{
 		double Time = (double)cvGetTickCount();
 		const string str_img_path = "./images_for_MER/2_rotated.jpg";
 		Mat mat_src_bgr = imread(str_img_path, IMREAD_COLOR);
-		
-		
+
+
 		Rect rect_sub(231, 178, 69, 84);
 		Rect rect_MER;
 		int ret = get_upRight_MER_using_traversing2(str_img_path, mat_src_bgr, rect_sub, rect_MER);
@@ -151,7 +216,6 @@ public:
 		cv::imwrite(str_img_path + "_withMER.jpg", mat_src_bgr);
 		cv::waitKey(0);
 	}
-	
 	void test_rect()
 	{
 		const string str_img_path = "./images_for_MER/2.jpg_binary_gray.jpg";
@@ -503,7 +567,7 @@ protected:
 		Mat mat_src_binary_gray;
 		cv::namedWindow("mat_src_binary_gray", CV_WINDOW_AUTOSIZE);
 		threshold(mat_src_gray, mat_src_binary_gray, 100, 255,THRESH_BINARY_INV);
-		imwrite(str_img_path+"_binary_gray.jpg", mat_src_binary_gray);
+//		imwrite(str_img_path+"_binary_gray.jpg", mat_src_binary_gray);
 		cv::imshow("mat_src_binary_gray", mat_src_binary_gray);
 		//最大面积的内接矩形肯定在最大面积的轮廓中，故先查找最大面积的轮廓
 		//查找最大面积的轮廓

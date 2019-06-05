@@ -1099,7 +1099,7 @@ protected:
 		//获取仿射矩阵以及旋转后矩阵的大小
 		Mat mat_rotation; //仿射矩阵
 		Size Dsize;
-		//根据寻找中心、缩放比例获取仿射变换矩阵和结果矩阵的大小
+		//根据旋转中心、缩放比例获取仿射变换矩阵和结果矩阵的大小
 		ret = CBusin_Opencv_Transform_Tool::instance().get_rotation_matrix_without_loss(src_mat, center, Ddgree, fScale, mat_rotation, Dsize);
 		if (ret)
 		{

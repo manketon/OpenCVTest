@@ -119,7 +119,7 @@ public:
 		//如果部分象素落在输入图像的边界外，那么它们的值设定为 fillval.
 
 		//CV_WARP_INVERSE_MAP - 指定 map_matrix 是输出图像到输入图像的反变换，
-		cv::warpAffine(src_img_mat, img_rotated, map_matrix, Size(width_rotate, height_rotate), 1, 0, 0);
+		cv::warpAffine(src_img_mat, img_rotated, map_matrix, Size(width_rotate, height_rotate), 1, 0, Scalar(255, 255, 255));
 		return img_rotated;
 	}
 
