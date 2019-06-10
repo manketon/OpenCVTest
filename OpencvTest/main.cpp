@@ -319,7 +319,7 @@ int main(int argc, char** argv)
 		//	    CBusin_OpenCV_Common_Tool::instance().test_get_binary_gray_mat("F:\\project\\Programming_Test\\OpencvTest\\OpencvTest\\images_src");
 //		test_gray_mat();
 //		CBusin_OpenCV_Contour_Tool::instance().test("F:/project/Programming_Test/OpencvTest/OpencvTest/images_src/guxiaowei.jpg");
-	    CInscribed_Polygon_Tool::instace().test_max_inscribed_rect_using_traversing2();
+	    CInscribed_Polygon_Tool::instace().test_max_inscribed_rect_using_traversing_for_rotated2();
 //		test_create_black_background_img();
 	}
 	catch (std::exception& e)
