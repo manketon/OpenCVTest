@@ -217,12 +217,14 @@ public:
 		Mat mat_with_max_area;
 		Rect rect_MER_with_max_area;
 		double dDegree_with_max_area = 0;
+		//子矩形：人工确定最大内接矩形肯定包含的子矩形，便于降低时间复杂度
+		Rect rect_sub(163, 177, 117, 82);
 		for (double dDegree = 0; dDegree <= 90; dDegree += 1)
 		{
+			//TODO::获取旋转后的图片及子矩形
 			Mat mat_rotated = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
 				mat_src_bgr, rRect_min_area.center, dDegree, 1, Scalar(0, 0, 0));
 
-			Rect rect_sub(231, 178, 69, 84);
 			Rect rect_MER;
 			int ret = get_upRight_MER_using_traversing3(mat_rotated, rect_sub, rect_MER);
 			if (ret)
@@ -759,11 +761,11 @@ protected:
 		ret = get_white_line_arr(mat_src_binary_gray, x_white_line_ptr_Arr, y_white_line_ptr_Arr, nXmin, nXmax, nYmin, nYmax);
 		int nMin_dist_X = 2; //X方向两边界的最小间隔
 		int nMin_dist_Y = 2; //Y方向上两边界的最小间隔
-		for (int i = nXmin; i <= nXmax/* && i <= nSub_rect_MinX*/; ++i)
+		for (int i = nXmin; i <= nXmax && i <= nSub_rect_MinX; ++i)
 		{
-			for (int j = i + nMin_dist_X /*nSub_rect_MaxX*/; j <= nXmax; ++j)
+			for (int j = /*i + nMin_dist_X*/ nSub_rect_MaxX; j <= nXmax; ++j)
 			{
-				for (int m = nYmin; m <= nYmax/* && m <= nSub_rect_MinY*/; ++m)
+				for (int m = nYmin; m <= nYmax  && m <= nSub_rect_MinY; ++m)
 				{
 					//判定三条线所得的两个顶点是否在轮廓外
 					//根据灰度值来判定点是否在轮廓外
@@ -775,7 +777,7 @@ protected:
 					{
 						continue;
 					}
-					for (int n = m + nMin_dist_Y/* nSub_rect_MaxY*/; n <= nYmax; ++n)
+					for (int n = /*m + nMin_dist_Y*/  nSub_rect_MaxY; n <= nYmax; ++n)
 					{
 						if (mat_src_binary_gray.at<uchar>(n, i) == 0)
 						{//在轮廓外

@@ -123,7 +123,40 @@ public:
 		cv::warpAffine(src_img_mat, img_rotated, map_matrix, Size(width_rotate, height_rotate), 1, 0, borderValue);
 		return img_rotated;
 	}
+	cv::Mat rotate_image_without_loss(const cv::Mat& src_img_mat, const CvPoint2D32f& center
+		, double degree, float fScale, Mat& mat_matrix, const Scalar& borderValue = Scalar(0, 0, 0))
+	{
+		degree = -degree;
+		double angle = degree  * CV_PI / 180.; // 弧度
+		double a = sin(angle), b = cos(angle);
+		int width = src_img_mat.cols;
+		int height = src_img_mat.rows;
+		int width_rotate = int(height * fabs(a) + width * fabs(b));
+		int height_rotate = int(width * fabs(a) + height * fabs(b));
+		//旋转数组map
+		// [ m0  m1  m2 ] ===>  [ A11  A12   b1 ]
 
+		// [ m3  m4  m5 ] ===>  [ A21  A22   b2 ]
+		float map[6] = {0};
+		mat_matrix = Mat(2, 3, CV_32F, map);
+		// 旋转中心
+		//		CvPoint2D32f center = cvPoint2D32f(width / 2, height / 2);
+		CvMat map_matrix2 = mat_matrix;
+		cv2DRotationMatrix(center, degree, fScale, &map_matrix2);
+		map[2] += (width_rotate - width) / 2;
+		map[5] += (height_rotate - height) / 2;
+		Mat img_rotated;
+
+		//对图像做仿射变换
+
+		//CV_WARP_FILL_OUTLIERS - 填充所有输出图像的象素。
+
+		//如果部分象素落在输入图像的边界外，那么它们的值设定为 fillval.
+
+		//CV_WARP_INVERSE_MAP - 指定 map_matrix 是输出图像到输入图像的反变换，
+		cv::warpAffine(src_img_mat, img_rotated, mat_matrix, Size(width_rotate, height_rotate), 1, 0, borderValue);
+		return img_rotated;
+	}
 	/************************************
 	* Method:    get_rotation_matrix_without_loss
 	* Brief:  获取进行无损失变换所需的仿射变换矩阵以及结果矩阵的大小
