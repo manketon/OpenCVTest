@@ -46,6 +46,17 @@ public:
 		static CBusin_OpenCV_Common_Tool obj;
 		return obj;
 	}
+	int get_my_RotatedRect(const Point2f& _point1, const Point2f& _point2, const Point2f& _point3, RotatedRect& rRect);
+	int draw_lines(const Mat& mat_src, const Point2f* pArr, size_t n, const Scalar& color)
+	{
+		Mat mat_tmp = mat_src.clone();
+		for (int i = 0; i != n; ++i)
+		{
+			line(mat_tmp, pArr[i],pArr[(i+1)%n], color, 2);
+		}
+		imshow("img_with_line", mat_tmp);
+		return 0;
+	}
 	int test_get_binary_gray_mat(const string& str_images_dir)
 	{
 		//获取指定目录中的所有图片

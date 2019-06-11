@@ -221,12 +221,13 @@ public:
 		Rect rect_sub(163, 177, 117, 82);
 		for (double dDegree = 0; dDegree <= 90; dDegree += 1)
 		{
-			//TODO::获取旋转后的图片及子矩形
+			//获取旋转后的图片及子矩形
+			Rect rect_sub_dst_shrink;//被旋转后子矩形的缩小矩形
 			Mat mat_rotated = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
-				mat_src_bgr, rRect_min_area.center, dDegree, 1, Scalar(0, 0, 0));
+				mat_src_bgr, rRect_min_area.center, dDegree, 1, rect_sub, rect_sub_dst_shrink, Scalar(0, 0, 0));
 
 			Rect rect_MER;
-			int ret = get_upRight_MER_using_traversing3(mat_rotated, rect_sub, rect_MER);
+			int ret = get_upRight_MER_using_traversing3(mat_rotated, rect_sub_dst_shrink, rect_MER);
 			if (ret)
 			{
 				std::cout << __FUNCTION__ << " | failed, ret:" << ret << endl;
