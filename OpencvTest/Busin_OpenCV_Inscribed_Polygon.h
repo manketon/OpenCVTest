@@ -222,6 +222,13 @@ public:
 		double dDegree_with_max_area = 0;
 		//子矩形：人工确定最大内接矩形肯定包含的子矩形，便于降低时间复杂度
 		Rect rect_sub(163, 177, 117, 82);
+		Point2f points_arr_src[4] = {
+			Point(rect_sub.x, rect_sub.y + rect_sub.height)
+			, Point(rect_sub.x, rect_sub.y)
+			, Point(rect_sub.x + rect_sub.width, rect_sub.y)
+			, Point(rect_sub.x + rect_sub.width, rect_sub.y + rect_sub.height)};
+
+		CBusin_OpenCV_Common_Tool::instance().draw_lines(mat_src_binary_gray, points_arr_src, 4, Scalar(0), "src img with sub rect");
 		//对原图进行无损失旋转，再对旋转所得图片进行穷举最大内接upRight矩形，记录面积最大时的情况
 		for (double dDegree = 0; dDegree <= 90; dDegree += 1)
 		{

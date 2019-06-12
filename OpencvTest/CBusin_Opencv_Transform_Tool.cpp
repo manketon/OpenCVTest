@@ -62,12 +62,9 @@ cv::Mat CBusin_Opencv_Transform_Tool::rotate_image_without_loss(const cv::Mat& s
 	for (int i = 0; i != 4; ++i)
 	{
 		points_arr_dst[i] = get_dst_point_after_affine(points_arr_src[i], mat_matrix);
-		//对顶点进行缩放
-		points_arr_dst[i].x =  points_arr_dst[i].x * width_rotate / width;
-		points_arr_dst[i].y = points_arr_dst[i].y  * height_rotate / height;
 	}
 	//画出线段
-// 	CBusin_OpenCV_Common_Tool::instance().draw_lines(img_rotated, points_arr_dst, 4, Scalar(0));
+// 	CBusin_OpenCV_Common_Tool::instance().draw_lines(img_rotated, points_arr_dst, 4, Scalar(0), "img rotated with Rect rotated");
 // 	waitKey(0);
 	//获取旋转矩形对象
 	RotatedRect rRect;
