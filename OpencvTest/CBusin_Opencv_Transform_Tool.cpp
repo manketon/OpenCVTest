@@ -72,7 +72,7 @@ cv::Mat CBusin_Opencv_Transform_Tool::rotate_image_without_loss(const cv::Mat& s
 	//获取旋转矩形对象
 	RotatedRect rRect;
 	CBusin_OpenCV_Common_Tool::instance().get_my_RotatedRect(points_arr_dst[0], points_arr_dst[1], points_arr_dst[2], rRect);
-	//求其最大内接upRight矩形
+	//在旋转所得子矩形中求最大内接upRight矩形
 	if (rRect.size.width < rRect.size.height)
 	{
 		std::swap(rRect.size.width, rRect.size.height);
@@ -86,6 +86,8 @@ cv::Mat CBusin_Opencv_Transform_Tool::rotate_image_without_loss(const cv::Mat& s
 		}
 	}
 	rRect.points(points_arr_dst);
+	//找到子矩形的最大内接upRight矩形
+	//TODO::下面算法待优化
 	if (rRect.angle > 90)
 	{//左高右低
 		Point middle_1 = (points_arr_dst[0] + points_arr_dst[3]) / 2;

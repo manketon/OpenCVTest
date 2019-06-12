@@ -128,7 +128,7 @@ public:
 		cv::imshow("mat src with MER", mat_src_gray);
 		cv::waitKey(0);
 	}
-
+	
 	void test_max_inscribed_rect_using_traversing_for_rotated()
 	{
 		double Time = (double)cvGetTickCount();
@@ -191,6 +191,8 @@ public:
 		cv::imwrite(str_img_path + "_withMER.jpg", mat_with_max_area);
 		cv::waitKey(0);
 	}
+	//对于黑底白物图片，通过对原图进行逐渐旋转得到旋转后的图，然后对旋转所得图片进行穷举查找其最大内接矩形
+	//将面积最大的内接矩形记录下来，这样最终结果就是原图对应的最大内接矩形
 	void test_max_inscribed_rect_using_traversing_for_rotated2()
 	{
 		double Time = (double)cvGetTickCount();
@@ -213,29 +215,31 @@ public:
 			printf("%s | error\n", __FUNCTION__);
 			return;
 		}
+		//查找最大面积轮廓对应的最小外接矩形，并以此最小外接矩形的中心作为旋转中心
 		RotatedRect rRect_min_area = cv::minAreaRect(vec_max_area_contour);
-		Mat mat_with_max_area;
-		Rect rect_MER_with_max_area;
+		Mat mat_with_max_area;//最大面积时对应的旋转图片
+		Rect rect_upRight_MER_with_max_area; //最大面积时对应的旋转图片中的最大内接upRight矩形
 		double dDegree_with_max_area = 0;
 		//子矩形：人工确定最大内接矩形肯定包含的子矩形，便于降低时间复杂度
 		Rect rect_sub(163, 177, 117, 82);
+		//对原图进行无损失旋转，再对旋转所得图片进行穷举最大内接upRight矩形，记录面积最大时的情况
 		for (double dDegree = 0; dDegree <= 90; dDegree += 1)
 		{
 			//获取旋转后的图片及子矩形
-			Rect rect_sub_dst_shrink;//被旋转后子矩形的缩小矩形
+			Rect rect_sub_dst_shrink;//被旋转后子矩形的缩小矩形，以保证其肯定被包含在最大内接upRight矩形内
 			Mat mat_rotated = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
 				mat_src_bgr, rRect_min_area.center, dDegree, 1, rect_sub, rect_sub_dst_shrink, Scalar(0, 0, 0));
-
-			Rect rect_MER;
-			int ret = get_upRight_MER_using_traversing3(mat_rotated, rect_sub_dst_shrink, rect_MER);
+			//根据旋转所得图片、子矩形求取轮廓的最大内接upRight矩形
+			Rect rect_upRight_MER;
+			int ret = get_upRight_MER_using_traversing3(mat_rotated, rect_sub_dst_shrink, rect_upRight_MER);
 			if (ret)
 			{
 				std::cout << __FUNCTION__ << " | failed, ret:" << ret << endl;
 			}
-			if (rect_MER.area() > rect_MER_with_max_area.area())
+			if (rect_upRight_MER.area() > rect_upRight_MER_with_max_area.area())
 			{
 				mat_with_max_area = mat_rotated.clone();
-				rect_MER_with_max_area = rect_MER;
+				rect_upRight_MER_with_max_area = rect_upRight_MER;
 				dDegree_with_max_area = dDegree;
 			}
 			//			cv::waitKey(0);
@@ -243,17 +247,17 @@ public:
 		Time = (double)cvGetTickCount() - Time;
 		printf( "run time = %gms\n", Time /(cvGetTickFrequency()*1000) );//毫秒
 
-		//最大面积对应的矩阵中画出矩阵
-		cv::rectangle(mat_with_max_area, rect_MER_with_max_area, Scalar(0, 0, 0), 1, LINE_8,0);
-		std::cout << __FUNCTION__ << " | MER:" << rect_MER_with_max_area << ", area:" << rect_MER_with_max_area.area() 
+		//最大面积对应的矩阵中画出矩形
+		cv::rectangle(mat_with_max_area, rect_upRight_MER_with_max_area, Scalar(0, 0, 0), 1, LINE_8,0);
+		std::cout << __FUNCTION__ << " | MER:" << rect_upRight_MER_with_max_area << ", area:" << rect_upRight_MER_with_max_area.area() 
 			<< ", dDegree_with_max_area:" << dDegree_with_max_area << endl;
 		//此时的最大面积矩阵逆向旋转（注意：此时图片的分辨率发生了变化，并且应该以旋转后的中心点来旋转）
 		Mat mat_withMER = CBusin_Opencv_Transform_Tool::instance().rotate_image_without_loss(
 			mat_with_max_area, rRect_min_area.center/*中心点旋转错误*/, -1 * dDegree_with_max_area, 1, Scalar(0, 0, 0));
 		cv::imshow("mat src with MER", mat_withMER);
 		cv::imwrite(str_img_path + "_withMER.jpg", mat_withMER);
-		// 		cv::imshow("mat_max_area with MER", mat_with_max_area);
-		// 		cv::imwrite(str_img_path + "_withMER.jpg", mat_with_max_area);
+// 		cv::imshow("mat_max_area with MER", mat_with_max_area);
+// 		cv::imwrite(str_img_path + "_withMER.jpg", mat_with_max_area);
 		cv::waitKey(0);
 	}
 	void test_max_inscribed_rect_using_traversing2()
@@ -718,7 +722,7 @@ protected:
 		return 0;
 	}
 
-	int get_upRight_MER_using_traversing3(const Mat& mat_src_bgr, const Rect& rect_sub, Rect& rect_MER)
+	int get_upRight_MER_using_traversing3(const Mat& mat_src_bgr, const Rect& rect_sub, Rect& rect_upRight_MER)
 	{
 		if (mat_src_bgr.type() != CV_8UC3)
 		{
@@ -763,7 +767,7 @@ protected:
 		int nMin_dist_X = 2; //X方向两边界的最小间隔
 		int nMin_dist_Y = 2; //Y方向上两边界的最小间隔
 		for (int i = nXmin; i <= nXmax && i <= nSub_rect_MinX; ++i)
-		{
+		{ 
 			for (int j = /*i + nMin_dist_X*/ nSub_rect_MaxX; j <= nXmax; ++j)
 			{
 				for (int m = nYmin; m <= nYmax  && m <= nSub_rect_MinY; ++m)
@@ -790,8 +794,8 @@ protected:
 						}
 						//使用rect_edge_has_black成功
 						if (rect_edge_has_black2(mat_src_binary_gray, x_white_line_ptr_Arr, y_white_line_ptr_Arr, i, j, m, n) == false)
-						{
-							//计算面积
+						{//四条边上都无黑点，则说明此矩形有效
+							//计算此四边所组成的矩形的面积
 							double dArea_tmp = (j - i + 1)*(n - m + 1);
 							if (dMax_area < dArea_tmp)
 							{
@@ -803,7 +807,7 @@ protected:
 							}
 						}
 						else
-						{//有黑点在四边所组成的矩形内,则不再当前方向上继续扩展边界
+						{//有黑点在四边所组成的矩形上,则不再当前方向上继续扩展边界
 							break;
 						}
 					}
@@ -813,7 +817,7 @@ protected:
 		ret = release_white_line_arr(mat_src_binary_gray.size(), x_white_line_ptr_Arr, y_white_line_ptr_Arr);
 		std::cout << __FUNCTION__ << " | flag_x_min:" << flag_x_min << ", flag_x_max:" << flag_x_max 
 			<< ", flag_y_min:" << flag_y_min << ",flag_y_max:" << flag_y_max << ", dMax_area:" << dMax_area << endl;
-		rect_MER =  Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min + 1, flag_y_max - flag_y_min + 1);
+		rect_upRight_MER =  Rect(flag_x_min, flag_y_min, flag_x_max - flag_x_min + 1, flag_y_max - flag_y_min + 1);
 		return 0;
 	}
 
@@ -860,7 +864,7 @@ protected:
 		}
 		return false;
 	}
-	
+	//判定矩形四边是否含有黑色点，任一边含有黑色点都返回真
 	bool rect_edge_has_black2(const Mat& mat_src_binary_gray, BG_Element**&x_white_line_ptr_Arr, BG_Element**&y_while_line_ptr_Arr
 		, int nXmin, int nXmax, int nYmin, int nYmax)
 	{
