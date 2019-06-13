@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Busin_OpenCV_Common_Tool.cpp" />
+    <ClCompile Include="Busin_OpenCV_Inscribed_Polygon.cpp" />
     <ClCompile Include="CBusin_Opencv_Transform_Tool.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

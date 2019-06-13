@@ -24,6 +24,9 @@
     <ClCompile Include="Busin_OpenCV_Common_Tool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Busin_OpenCV_Inscribed_Polygon.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CBusin_Opencv_Transform_Tool.h">
