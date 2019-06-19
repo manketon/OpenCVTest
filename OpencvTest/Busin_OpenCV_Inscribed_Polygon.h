@@ -342,52 +342,54 @@ public:
 		threshold(temp,temp, 100, 255,THRESH_OTSU);
 		imshow("src",temp);
 		//寻找最大轮廓
-		vector<Point>  VPResult; 
-		int ret = FindBiggestContour(temp, VPResult);
-		if (VPResult.empty())
+		vector<Point>  vec_contour_with_max_area; 
+		int ret = FindBiggestContour(temp, vec_contour_with_max_area);
+		if (vec_contour_with_max_area.empty())
 		{
 			printf("%s | error\n", __FUNCTION__);
 			return;
 		}
 		//寻找最大内切圆
-		//在目标轮廓中查找x的最大值和y的最大值
+		//在目标轮廓中分别查找X/Y的最大值和最小值
 		int nMin_X = INT_MAX, nMax_X = INT_MIN, nMin_Y = INT_MAX, nMax_Y = INT_MIN;
-		for (int i = 0; i != VPResult.size(); ++i)
+		for (int i = 0; i != vec_contour_with_max_area.size(); ++i)
 		{
-			if (VPResult[i].x > nMax_X)
+			if (vec_contour_with_max_area[i].x > nMax_X)
 			{
-				nMax_X =  VPResult[i].x;
+				nMax_X =  vec_contour_with_max_area[i].x;
 			}
-			else if (VPResult[i].x < nMin_X)
+			else if (vec_contour_with_max_area[i].x < nMin_X)
 			{
-				nMin_X = VPResult[i].x;
+				nMin_X = vec_contour_with_max_area[i].x;
 			}
-			if (VPResult[i].y > nMax_Y)
+			if (vec_contour_with_max_area[i].y > nMax_Y)
 			{
-				nMax_Y = VPResult[i].y;
+				nMax_Y = vec_contour_with_max_area[i].y;
 			}
-			else if (VPResult[i].y < nMin_Y)
+			else if (vec_contour_with_max_area[i].y < nMin_Y)
 			{
-				nMin_Y = VPResult[i].y;
+				nMin_Y = vec_contour_with_max_area[i].y;
 			}
 		}
-		double maxdist = 0;
+		double dMax_dist = 0;//内接圆最大半径
 		Point center;
+		//遍历目标区域中的点（视作圆心），计算每个点到轮廓的最短距离（视作半径），将所得距离与最大半径比较
 		for(int i = nMin_X; i < nMax_X; ++i)
 		{
 			for(int j = nMin_Y; j < nMax_Y; ++j)
 			{
-				double dDist = pointPolygonTest(VPResult,cv::Point(i,j), true);
-				if(dDist > maxdist)
-				{
-					maxdist=dDist;
-					center=cv::Point(i,j);
+				//轮廓内的点到轮廓的距离为正，且此距离为最短的
+				double dDist = pointPolygonTest(vec_contour_with_max_area, cv::Point(i,j), true);
+				if(dDist > dMax_dist)
+				{//当前点到轮廓的距离大于之前的最大距离，则更新
+					dMax_dist = dDist;
+					center = cv::Point(i,j);
 				}
 			}
 		}
 		//绘制结果
-		circle(src,center,maxdist,Scalar(0,0,255));
-		imshow("dst",src);
+		circle(src, center, dMax_dist, Scalar(0, 0, 255));
+		imshow("dst", src);
 		waitKey();
 	}
 protected:
