@@ -27,6 +27,9 @@
     <ClCompile Include="Busin_OpenCV_Inscribed_Polygon.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Busin_OpenCV_Filter_Tool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CBusin_Opencv_Transform_Tool.h">
@@ -48,6 +51,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Busin_OpenCV_Inscribed_Polygon.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Busin_OpenCV_Filter_Tool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageMaster\include\ImageMaster.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

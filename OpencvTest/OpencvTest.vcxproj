@@ -71,8 +71,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>F:\project\CoreRepo\Development\Source\trunk\comnon_sdk\include;E:\opencv_3.3.1_install\opencv\mybuild\install\include;$(IncludePath)</IncludePath>
-    <LibraryPath>F:\project\CoreRepo\Project\03.Study\常用软件\boost源码及动态库\windows\boost_1_65_1\boost_65_1_lib_windows\stage\boost_msvc-11_x64;E:\opencv_3.3.1_install\opencv\mybuild\lib\Release;E:\opencv_3.3.1_install\opencv\mybuild\lib\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\GitHub\OpenCVTest\trunk\OpencvTest\ImageMaster\include;F:\project\CoreRepo\Development\Source\trunk\comnon_sdk\include;E:\opencv_3.3.1_install\opencv\mybuild\install\include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\GitHub\OpenCVTest\trunk\OpencvTest\ImageMaster\lib;F:\project\CoreRepo\Project\03.Study\常用软件\boost源码及动态库\windows\boost_1_65_1\boost_65_1_lib_windows\stage\boost_msvc-11_x64;E:\opencv_3.3.1_install\opencv\mybuild\lib\Release;E:\opencv_3.3.1_install\opencv\mybuild\lib\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -106,7 +106,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>opencv_core331d.lib;opencv_imgproc331d.lib;opencv_imgcodecs331d.lib;opencv_highgui331d.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>E:\opencv_3.3.1_install\opencv\mybuild\install\x64\vc11\lib;E:\opencv_3.3.1_install\opencv\mybuild\lib\Release;E:\opencv_3.3.1_install\opencv\mybuild\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>F:\GitHub\OpenCVTest\trunk\OpencvTest\ImageMaster\lib;E:\opencv_3.3.1_install\opencv\mybuild\install\x64\vc11\lib;E:\opencv_3.3.1_install\opencv\mybuild\lib\Release;E:\opencv_3.3.1_install\opencv\mybuild\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Busin_OpenCV_Common_Tool.cpp" />
+    <ClCompile Include="Busin_OpenCV_Filter_Tool.cpp" />
     <ClCompile Include="Busin_OpenCV_Inscribed_Polygon.cpp" />
     <ClCompile Include="CBusin_Opencv_Transform_Tool.cpp" />
     <ClCompile Include="main.cpp" />
@@ -153,10 +154,12 @@
     <ClInclude Include="Busin_OpenCV_Common_Tool.h" />
     <ClInclude Include="Busin_Opencv_Contour.h" />
     <ClInclude Include="Busin_OpenCV_File_Tool.h" />
+    <ClInclude Include="Busin_OpenCV_Filter_Tool.h" />
     <ClInclude Include="Busin_OpenCV_Inscribed_Polygon.h" />
     <ClInclude Include="CBusin_Opencv_Transform_Tool.h" />
     <ClInclude Include="CBusin_OpenCV_Vector_Tool.h" />
     <ClInclude Include="File_System_Tool.h" />
+    <ClInclude Include="ImageMaster\include\ImageMaster.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
