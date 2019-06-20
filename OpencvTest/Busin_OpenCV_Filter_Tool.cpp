@@ -17,9 +17,12 @@
 *****************************************************************/
 #include "Busin_OpenCV_Filter_Tool.h"
 #include "ImageMaster/include/ImageMaster.h"
+#include <string>
+#include "Boost_Common_Tool.h"
+#include <iostream>
+#include <boost/filesystem.hpp>
 using namespace cv;
-
-
+using namespace std;
 CBusin_OpenCV_Filter_Tool_Inst& CBusin_OpenCV_Filter_Tool_Inst::instance()
 {
 	return ms_inst;
@@ -27,43 +30,94 @@ CBusin_OpenCV_Filter_Tool_Inst& CBusin_OpenCV_Filter_Tool_Inst::instance()
 //素描
 int CBusin_OpenCV_Filter_Tool_Inst::test_sketch()
 {
-	Mat src = imread("C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/src.jpg",1);
+	string str_test_imgs_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_input";
+	string str_output_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_output";
+	vector<string> vec_files_path;
+	int ret = sp::get_filenames(str_test_imgs_dir, vec_files_path);
+	if (ret)
+	{
+		std::cout << __FUNCTION__ << " | error, ret:" << ret << endl;
+		return ret;
+	}
+	for (int i = 0; i != vec_files_path.size(); ++i)
+	{
+		std::string str_img_path = vec_files_path[i];
+		Mat src = imread(str_img_path,1);
+		int width = src.cols;
+		int heigh = src.rows;
+		Mat gray0, gray1;
+		//去色
+		cvtColor(src, gray0, CV_BGR2GRAY);
+		//反色
+		addWeighted(gray0, -1, NULL, 0, 255, gray1);
+		//高斯模糊,高斯核的Size与最后的效果有关
+		int nKernel_size = 11;
+		GaussianBlur(gray1, gray1, Size(nKernel_size, nKernel_size), 0);
+		imshow("result of gauss", gray1);
+		//融合：颜色减淡
+		Mat img(gray1.size(), CV_8UC1);
+		for (int y = 0; y < heigh; ++y)
+		{
+
+			uchar* P0  = gray0.ptr<uchar>(y);
+			uchar* P1  = gray1.ptr<uchar>(y);
+			uchar* P  = img.ptr<uchar>(y);
+			for (int x = 0; x < width; ++x)
+			{
+				int tmp0 = P0[x];
+				int tmp1 = P1[x];
+				P[x] =(uchar) min((tmp0 + (tmp0 * tmp1)/(256 - tmp1)), 255);
+			}
+
+		}
+		Mat img_for_show;
+		cv::resize(img, img_for_show, Size(img.cols / 3, img.rows / 4));
+		imshow("素描", img_for_show);
+		//二值化
+		Mat mat_binary;
+		cv::threshold(img, mat_binary, 245, 255, cv::THRESH_BINARY);
+		imshow("mat_binary", mat_binary);
+		waitKey();
+		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
+			+  "_result.jpg";
+		imwrite(str_dst_img_path, mat_binary);
+	}
+	return 0;
+}
+
+//衣服颜色去除了，但是眼珠部分与PS不同
+int CBusin_OpenCV_Filter_Tool_Inst::test_Laplacian_sketch()
+{
+	std::string str_img_path = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/lhj.jpg";
+	Mat src = imread(str_img_path,1);
 	int width = src.cols;
 	int heigh = src.rows;
 	Mat gray0, gray1;
 	//去色
 	cvtColor(src, gray0, CV_BGR2GRAY);
-	//反色
-	addWeighted(gray0, -1, NULL, 0, 255, gray1);
-	//高斯模糊,高斯核的Size与最后的效果有关
-	int nKernel_size = 3;
-	GaussianBlur(gray1, gray1, Size(nKernel_size, nKernel_size), 0);
-	imshow("result of gauss", gray1);
-	//融合：颜色减淡
-	Mat img(gray1.size(), CV_8UC1);
-	for (int y = 0; y < heigh; ++y)
-	{
-
-		uchar* P0  = gray0.ptr<uchar>(y);
-		uchar* P1  = gray1.ptr<uchar>(y);
-		uchar* P  = img.ptr<uchar>(y);
-		for (int x = 0; x < width; ++x)
-		{
-			int tmp0 = P0[x];
-			int tmp1 = P1[x];
-			P[x] =(uchar) min((tmp0 + (tmp0 * tmp1)/(256 - tmp1)), 255);
-		}
-
-	}
-	imshow("素描",img);
+	const int MEDIAN_BLUR_FILTER_SIZE = 3;
+//	cv::medianBlur(gray0, gray0, MEDIAN_BLUR_FILTER_SIZE);
+	GaussianBlur(gray0, gray0, Size(MEDIAN_BLUR_FILTER_SIZE, MEDIAN_BLUR_FILTER_SIZE), 0);
+	cv::Mat edges;
+	//边缘检测
+	const int LAPLACIAN_FILTER_SIZE = 3;
+	cv::Laplacian(gray0, edges, CV_8U, LAPLACIAN_FILTER_SIZE);
+	imshow("edges", edges);
+	cv::Mat mask;
+	const int EDGE_THRESHOLD = 10;
+	cv::threshold(edges, mask, EDGE_THRESHOLD, 255, cv::THRESH_BINARY_INV);
+	imshow("素描",mask);
 	waitKey();
+	imwrite(str_img_path + "_result.jpg", mask);
 	return 0;
 }
+
 //高反差保留
 int CBusin_OpenCV_Filter_Tool_Inst::test_GaoFanChaBaoLiu()
 {
 	int R = 11;
-	Mat src = imread("C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/src.jpg", 1);
+	std::string str_img_path = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/lhj.jpg";
+	Mat src = imread(str_img_path, 1);
 	imshow("src",src);
 	int width=src.cols;
 	int heigh=src.rows;
@@ -115,6 +169,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_GaoFanChaBaoLiu()
 	waitKey();
 	//imwrite("D:/高反差保留.jpg",dst);
 	//	imwrite("D:/高通滤波.jpg",dstF);
+	imwrite(str_img_path + "_result.jpg", dst);
 	return 0;
 }
 

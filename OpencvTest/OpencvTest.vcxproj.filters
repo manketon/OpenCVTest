@@ -30,6 +30,9 @@
     <ClCompile Include="Busin_OpenCV_Filter_Tool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Boost_Common_Tool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CBusin_Opencv_Transform_Tool.h">
@@ -57,6 +60,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ImageMaster\include\ImageMaster.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Boost_Common_Tool.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

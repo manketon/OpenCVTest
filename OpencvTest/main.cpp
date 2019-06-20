@@ -322,9 +322,10 @@ int main(int argc, char** argv)
 //		CBusin_OpenCV_Contour_Tool::instance().test("F:/project/Programming_Test/OpencvTest/OpencvTest/images_src/guxiaowei.jpg");
 //	    CInscribed_Polygon_Tool::instace().test_max_inscribed_rect_using_traversing_for_rotated2();
 //		test_create_black_background_img();
-		CBusin_OpenCV_Filter_Tool_Inst::instance().test_sketch();
+//		CBusin_OpenCV_Filter_Tool_Inst::instance().test_sketch();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_GaoFanChaBaoLiu();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_photocopy();
+		CBusin_OpenCV_Filter_Tool_Inst::instance().test_Laplacian_sketch();
 	}
 	catch (std::exception& e)
 	{

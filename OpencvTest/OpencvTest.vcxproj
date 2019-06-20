@@ -144,6 +144,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Boost_Common_Tool.cpp" />
     <ClCompile Include="Busin_OpenCV_Common_Tool.cpp" />
     <ClCompile Include="Busin_OpenCV_Filter_Tool.cpp" />
     <ClCompile Include="Busin_OpenCV_Inscribed_Polygon.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Boost_Common_Tool.h" />
     <ClInclude Include="Busin_OpenCV_Common_Tool.h" />
     <ClInclude Include="Busin_Opencv_Contour.h" />
     <ClInclude Include="Busin_OpenCV_File_Tool.h" />

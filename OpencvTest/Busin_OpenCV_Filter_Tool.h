@@ -5,7 +5,7 @@ class CBusin_OpenCV_Filter_Tool_Inst
 public:
 	static CBusin_OpenCV_Filter_Tool_Inst& instance();
 	int test_sketch();
-	
+	int test_Laplacian_sketch();
 
 	int test_GaoFanChaBaoLiu();
 	int test_photocopy();
