@@ -302,6 +302,40 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_photocopy()
 	return 0;
 }
 
+int CBusin_OpenCV_Filter_Tool_Inst::test_difference_Edge_Detect()
+{
+	string str_test_imgs_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_input";
+	string str_output_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_output/difference_Edge_Detect";
+	vector<string> vec_files_path;
+	int ret = sp::get_filenames(str_test_imgs_dir, vec_files_path);
+	if (ret)
+	{
+		std::cout << __FUNCTION__ << " | error, ret:" << ret << endl;
+		return ret;
+	}
+	for (int i = 0; i != vec_files_path.size(); ++i)
+	{
+		std::string str_img_path = vec_files_path[i];
+		Mat src = imread(str_img_path,1);
+		int width = src.cols;
+		int heigh = src.rows;
+		Mat mat_gray_dst;
+		difference_Edge_Detect(src, mat_gray_dst, Rect(0, 0, width, heigh));
+		Mat img_for_show;
+		cv::resize(mat_gray_dst, img_for_show, Size(mat_gray_dst.cols / 3, mat_gray_dst.rows / 4));
+		imshow("素描", img_for_show);
+		//二值化
+		Mat mat_binary;
+		cv::threshold(mat_gray_dst, mat_binary, 40, 255, cv::THRESH_BINARY_INV);
+		imshow("mat_binary", mat_binary);
+		waitKey();
+		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
+			+  "_result.jpg";
+		imwrite(str_dst_img_path, mat_binary);
+	}
+	return 0;
+}
+
 void CBusin_OpenCV_Filter_Tool_Inst::Sketch(const Mat& img, Mat& dst)
 {
 	if ( dst.empty())
@@ -429,6 +463,84 @@ int CBusin_OpenCV_Filter_Tool_Inst::differenceOfGaussian(const Mat& mat_src, Mat
 	//将两幅高斯模糊图像做减法，得到一幅包含边缘点的结果图像
 	cv::absdiff(mat_gaussian_blur_1, mat_gaussian_blur_2, mat_dst);
 	return 0;
+}
+
+void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src, cv::Mat& mat_gray_dst, const cv::Rect& rect)
+{
+	// processing start and stop X,Y positions
+	int startX  = rect.x + 1;
+	int startY  = rect.y + 1;
+	int stopX   = startX + rect.width - 2;
+	int stopY   = startY + rect.height - 2;
+	mat_gray_dst = Mat(mat_src.size(), CV_8UC1);
+
+	int dstStride = mat_gray_dst.cols * mat_gray_dst.channels();
+	int dst_yushu = dstStride % 4;
+	if (dst_yushu != 0)
+	{
+		dstStride +=  4 - dst_yushu;
+	}
+
+	int srcStride = mat_src.cols * mat_src.channels();
+	int src_yushu = srcStride % 4;
+	if (src_yushu != 0)
+	{
+		srcStride += 4 - src_yushu;
+	}
+
+	const int dstOffset = dstStride - rect.width + 2;
+	const int srcOffset = srcStride - rect.width + 2;
+
+	int d = 0, max = 0;
+
+	// data pointers
+	const uchar* src = mat_src.data;
+	uchar* dst = mat_gray_dst.data;
+
+	// allign pointers
+	src += srcStride * startY + startX;
+	dst += dstStride * startY + startX;
+
+	// for each line
+	for ( int y = startY; y < stopY; y++ )
+	{
+		// for each pixel
+		for ( int x = startX; x < stopX; x++, src++, dst++ )
+		{
+			// left diagonal
+			max = (int) src[-srcStride - 1] - src[srcStride + 1];
+			if ( max < 0 )
+				max = -max;
+
+			// right diagonal
+			d = (int) src[-srcStride + 1] - src[srcStride - 1];
+			if ( d < 0 )
+				d = -d;
+			if ( d > max )
+				max = d;
+			// vertical
+			d = (int) src[-srcStride] - src[srcStride];
+			if ( d < 0 )
+				d = -d;
+			if ( d > max )
+				max = d;
+			// horizontal
+			d = (int) src[-1] - src[1];
+			if ( d < 0 )
+				d = -d;
+			if ( d > max )
+				max = d;
+
+			*dst = (uchar) max;
+		}
+		src += srcOffset;
+		dst += dstOffset;
+	}
+
+	// draw black rectangle to remove those pixels, which were not processed
+	// (this needs to be done for those cases, when filter is applied "in place" -
+	// source image is modified instead of creating new copy)
+	cv::rectangle( mat_gray_dst, rect, Scalar(0));
 }
 
 CBusin_OpenCV_Filter_Tool_Inst CBusin_OpenCV_Filter_Tool_Inst::ms_inst;

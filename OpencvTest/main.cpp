@@ -327,8 +327,9 @@ int main(int argc, char** argv)
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_photocopy();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_Laplacian_sketch();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_Sobel_sketch();
-		CBusin_OpenCV_Filter_Tool_Inst::instance().test_differenceOfGaussian();
+//		CBusin_OpenCV_Filter_Tool_Inst::instance().test_differenceOfGaussian();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_difference_IPLB();
+		CBusin_OpenCV_Filter_Tool_Inst::instance().test_difference_Edge_Detect();
 	}
 	catch (std::exception& e)
 	{

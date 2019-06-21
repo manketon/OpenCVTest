@@ -30,7 +30,7 @@ public:
 	int test_difference_IPLB();
 	int test_GaoFanChaBaoLiu();
 	int test_photocopy();
-	
+	int test_difference_Edge_Detect();
 protected:
 	//基于拉普拉斯锐化算法的素描算法
 	void Sketch(const Mat& img, Mat& dst);
@@ -39,6 +39,7 @@ protected:
 	int getPixel(const Mat& mat_img, int y, int x, int channel);
 	//高斯差分
 	int differenceOfGaussian(const Mat& mat_src, Mat& mat_dst);
+	void difference_Edge_Detect( const Mat& mat_src, cv::Mat& mat_gray_dst, const cv::Rect& rect);
 private:
 	static CBusin_OpenCV_Filter_Tool_Inst ms_inst;
 };
