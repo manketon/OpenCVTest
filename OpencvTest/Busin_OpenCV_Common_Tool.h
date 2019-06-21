@@ -558,47 +558,7 @@ public:
 	*Parameter: int nBrightness -[in] 亮度（即偏置）,正负数都可以  
 	*Parameter: Mat & mat_dst_image -[in/out]  
 	************************************/
-	int change_contrast_and_brightness(const Mat& mat_src_bgr, double udContrast, int nBrightness, Mat& mat_dst_image)
-	{
-		//判定参数合法性
-		if (mat_src_bgr.empty())
-		{//原图为空
-			printf("%s | src mat is empty", __FUNCTION__);
-			return -1;
-		}
-		if (udContrast <= 0)
-		{
-			printf("%s | contrast must be more than 0", __FUNCTION__);
-			return 10106;
-		}
-		mat_dst_image = Mat::zeros( mat_src_bgr.size(), mat_src_bgr.type());
-
-		/// 执行运算 mat_dst_image(i,j) = udContrast*mat_src_bgr(i,j) + nBrightness
-		for( int y = 0; y < mat_src_bgr.rows; y++ )
-		{
-			for( int x = 0; x < mat_src_bgr.cols; x++ )
-			{
-				for( int c = 0; c < 3; c++ )
-				{
-					mat_dst_image.at<Vec3b>(y,x)[c] = saturate_cast<uchar>( udContrast*( mat_src_bgr.at<Vec3b>(y,x)[c] ) + nBrightness );
-				}
-			}
-		}
-#ifdef _DEBUG
-		/// 创建窗口
-		namedWindow("Original Image", 1);
-		namedWindow("New Image", 1);
-
-		/// 显示图像
-		imshow("Original Image", mat_src_bgr);
-		imshow("New Image", mat_dst_image);
-
-		/// 等待用户按键
-		waitKey(5000);
-#endif
-		return 0;
-
-	}
+	int change_contrast_and_brightness(const Mat& mat_src_bgr, double udContrast, int nBrightness, Mat& mat_dst_image);
 	static void callback_change_contrast_and_brightness(int pos, void* userdata)
 	{
 		printf("%s | enter\n", __FUNCTION__);

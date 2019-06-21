@@ -21,6 +21,7 @@
 #include "Boost_Common_Tool.h"
 #include <iostream>
 #include <boost/filesystem.hpp>
+#include "Busin_OpenCV_Common_Tool.h"
 using namespace cv;
 using namespace std;
 CBusin_OpenCV_Filter_Tool_Inst& CBusin_OpenCV_Filter_Tool_Inst::instance()
@@ -165,6 +166,62 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_Sobel_sketch()
 			+  "_result.jpg";
 		imwrite(str_dst_img_path, mask);
 	}
+	return 0;
+}
+
+//效果不咋地
+int CBusin_OpenCV_Filter_Tool_Inst::test_differenceOfGaussian()
+{
+	string str_test_imgs_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_input";
+	string str_output_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_output";
+	vector<string> vec_files_path;
+	int ret = sp::get_filenames(str_test_imgs_dir, vec_files_path);
+	if (ret)
+	{
+		std::cout << __FUNCTION__ << " | error, ret:" << ret << endl;
+		return ret;
+	}
+	for (int i = 0; i != vec_files_path.size(); ++i)
+	{
+		std::string str_img_path = vec_files_path[i];
+		Mat src = imread(str_img_path,1);
+		Mat mat_sketch;
+		differenceOfGaussian(src, mat_sketch);
+		Mat img_for_show;
+		cv::resize(mat_sketch, img_for_show, Size(mat_sketch.cols / 3, mat_sketch.rows / 4));
+		imshow("素描", img_for_show);
+		//二值化
+		Mat mat_binary;
+		cv::threshold(mat_sketch, mat_binary, 7, 255, cv::THRESH_BINARY_INV);
+		imshow("mat_binary", mat_binary);
+		waitKey();
+		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
+			+  "_result.jpg";
+		imwrite(str_dst_img_path, mat_binary);
+	}
+	return 0;
+}
+
+int CBusin_OpenCV_Filter_Tool_Inst::test_difference_IPLB()
+{
+	std::string str_img_path = "C:/Users/dell.dell-PC/Desktop/1301_IPLB_result.jpg";
+	Mat mat_src = imread(str_img_path, 1);
+	Mat mat_sketch;
+ 	//增加光照和对比度
+ 	CBusin_OpenCV_Common_Tool::instance().change_contrast_and_brightness(mat_src, 5, 20, mat_sketch);
+	cv::cvtColor(mat_sketch, mat_sketch, CV_BGR2GRAY);
+	resize(mat_sketch, mat_sketch,Size(mat_sketch.cols / 4, mat_sketch.rows / 4));
+	imshow("素描", mat_sketch);
+	imwrite(str_img_path + "_change_CB.jpg", mat_sketch);
+	//二值化
+	Mat mat_binary;
+	//高斯滤波时，阈值为50时较好。
+	cv::threshold(mat_sketch, mat_binary, 55, 255, cv::THRESH_BINARY_INV);
+	imshow("mat_binary after threshold", mat_binary);
+ 	//高斯滤波
+ 	cv::GaussianBlur(mat_binary, mat_binary, Size(3, 3), 1, 1);
+	waitKey();
+	imwrite(str_img_path + "_result.jpg", mat_binary);
 	return 0;
 }
 
@@ -354,6 +411,24 @@ int CBusin_OpenCV_Filter_Tool_Inst::getPixel(const Mat& mat_img, int y, int x, i
 	{
 		return mat_img.at<uchar>(y, x);
 	}
+	return 0;
+}
+
+int CBusin_OpenCV_Filter_Tool_Inst::differenceOfGaussian(const Mat& mat_src, Mat& mat_dst)
+{
+	//将原图转换为灰度图
+	Mat mat_gray;
+	cv::cvtColor(mat_src, mat_gray, COLOR_BGR2GRAY);
+	//用两个不同的模糊半径对灰度图像执行高斯模糊（取得两幅高斯模糊图像）
+	Mat mat_gaussian_blur_1;
+	int GAUSSIAN_BLUR_FILTER_SIZE_1 = 3;
+	cv::GaussianBlur(mat_gray, mat_gaussian_blur_1, Size(GAUSSIAN_BLUR_FILTER_SIZE_1, GAUSSIAN_BLUR_FILTER_SIZE_1), 5);
+	Mat mat_gaussian_blur_2;
+	int GAUSSIAN_BLUR_FILTER_SIZE_2 = 13;
+	cv::GaussianBlur(mat_gray, mat_gaussian_blur_2, Size(GAUSSIAN_BLUR_FILTER_SIZE_2, GAUSSIAN_BLUR_FILTER_SIZE_2), 5);
+	//将两幅高斯模糊图像做减法，得到一幅包含边缘点的结果图像
+	cv::absdiff(mat_gaussian_blur_1, mat_gaussian_blur_2, mat_dst);
+	return 0;
 }
 
 CBusin_OpenCV_Filter_Tool_Inst CBusin_OpenCV_Filter_Tool_Inst::ms_inst;

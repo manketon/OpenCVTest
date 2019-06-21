@@ -40,3 +40,61 @@ int CBusin_OpenCV_Common_Tool::get_my_RotatedRect(const Point2f& _point1, const 
 	rRect.angle = _angle;
 	return 0;
 }
+
+int CBusin_OpenCV_Common_Tool::change_contrast_and_brightness(const Mat& mat_src_bgr, double udContrast, int nBrightness, Mat& mat_dst_image)
+{
+	//判定参数合法性
+	if (mat_src_bgr.empty())
+	{//原图为空
+		printf("%s | src mat is empty", __FUNCTION__);
+		return -1;
+	}
+	if (udContrast <= 0)
+	{
+		printf("%s | contrast must be more than 0", __FUNCTION__);
+		return 10106;
+	}
+	mat_dst_image = Mat::zeros( mat_src_bgr.size(), mat_src_bgr.type());
+
+	/// 执行运算 mat_dst_image(i,j) = udContrast*mat_src_bgr(i,j) + nBrightness
+// 	for( int y = 0; y < mat_src_bgr.rows; y++ )
+// 	{
+// 		for( int x = 0; x < mat_src_bgr.cols; x++ )
+// 		{
+// 			for( int c = 0; c < 3; c++ )
+// 			{
+// 				mat_dst_image.at<Vec3b>(y,x)[c] = saturate_cast<uchar>( udContrast*( mat_src_bgr.at<Vec3b>(y,x)[c] ) + nBrightness );
+// 			}
+// 		}
+// 	}
+	//下面逻辑运行速度快
+	int nr = mat_src_bgr.rows;
+	int nc = mat_src_bgr.cols * mat_src_bgr.channels() ;
+	if (mat_src_bgr.isContinuous() && mat_dst_image.isContinuous())
+	{
+		nr = 1;
+		nc = nc * mat_src_bgr.rows;
+	}
+	for ( int i = 0; i < nr; ++i)
+	{
+		const uchar* pSrc_data = mat_src_bgr.ptr<uchar>(i);
+		uchar* pDst_data = mat_dst_image.ptr<uchar>(i);
+		for (int j = 0; j < nc; ++j)
+		{
+			pDst_data[j] = saturate_cast<uchar>(udContrast * pSrc_data[j] + nBrightness);
+		}
+	}
+#ifdef _DEBUG
+	/// 创建窗口
+	namedWindow("Original Image", 1);
+	namedWindow("New Image", 1);
+
+	/// 显示图像
+	imshow("Original Image", mat_src_bgr);
+	imshow("New Image", mat_dst_image);
+
+	/// 等待用户按键
+	waitKey(5000);
+#endif
+	return 0;
+}

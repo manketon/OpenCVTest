@@ -26,6 +26,8 @@ public:
 		//Scharr算子
 		return 0;
 	}
+	int test_differenceOfGaussian();
+	int test_difference_IPLB();
 	int test_GaoFanChaBaoLiu();
 	int test_photocopy();
 	
@@ -35,6 +37,8 @@ protected:
 	//基于八方向浮雕算法的素描算法
 	void DiamondEmboss(const Mat& img, Mat& dst, EMBOSS_DIRECTION Ed /* = SE */,int offset /* = 127 */);
 	int getPixel(const Mat& mat_img, int y, int x, int channel);
+	//高斯差分
+	int differenceOfGaussian(const Mat& mat_src, Mat& mat_dst);
 private:
 	static CBusin_OpenCV_Filter_Tool_Inst ms_inst;
 };
