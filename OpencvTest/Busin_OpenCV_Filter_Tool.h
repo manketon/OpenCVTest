@@ -39,7 +39,7 @@ protected:
 	int getPixel(const Mat& mat_img, int y, int x, int channel);
 	//¸ßË¹²î·Ö
 	int differenceOfGaussian(const Mat& mat_src, Mat& mat_dst);
-	void difference_Edge_Detect( const Mat& mat_src, cv::Mat& mat_gray_dst, const cv::Rect& rect);
+	void difference_Edge_Detect( const Mat& mat_src_gray, cv::Mat& mat_dst_gray, const cv::Rect& rect);
 private:
 	static CBusin_OpenCV_Filter_Tool_Inst ms_inst;
 };

@@ -319,16 +319,19 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_difference_Edge_Detect()
 		Mat src = imread(str_img_path,1);
 		int width = src.cols;
 		int heigh = src.rows;
-		Mat mat_gray_dst;
-		difference_Edge_Detect(src, mat_gray_dst, Rect(0, 0, width, heigh));
+		Mat mat_dst_gray;
+		Mat mat_src_gray;
+		cv::cvtColor(src, mat_src_gray, CV_BGR2GRAY);
+		difference_Edge_Detect(mat_src_gray, mat_dst_gray, Rect(0, 0, width, heigh));
 		Mat img_for_show;
-		cv::resize(mat_gray_dst, img_for_show, Size(mat_gray_dst.cols / 3, mat_gray_dst.rows / 4));
+		cv::resize(mat_dst_gray, img_for_show, Size(mat_dst_gray.cols / 3, mat_dst_gray.rows / 4));
 		imshow("素描", img_for_show);
 		//二值化
 		Mat mat_binary;
-		cv::threshold(mat_gray_dst, mat_binary, 40, 255, cv::THRESH_BINARY_INV);
-		imshow("mat_binary", mat_binary);
-		waitKey();
+		//TODO::阈值应该和原图有关，如何设置这个阈值呢？
+		cv::threshold(mat_dst_gray, mat_binary, 10, 255, cv::THRESH_BINARY_INV);
+// 		imshow("mat_binary", mat_binary);
+// 		waitKey();
 		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
 			+  "_result.jpg";
 		imwrite(str_dst_img_path, mat_binary);
@@ -465,23 +468,24 @@ int CBusin_OpenCV_Filter_Tool_Inst::differenceOfGaussian(const Mat& mat_src, Mat
 	return 0;
 }
 
-void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src, cv::Mat& mat_gray_dst, const cv::Rect& rect)
+void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src_gray, cv::Mat& mat_dst_gray, const cv::Rect& rect)
 {
+	//TODO::当Mat行与行直接不是连续的，是否有问题？
 	// processing start and stop X,Y positions
 	int startX  = rect.x + 1;
 	int startY  = rect.y + 1;
 	int stopX   = startX + rect.width - 2;
 	int stopY   = startY + rect.height - 2;
-	mat_gray_dst = Mat(mat_src.size(), CV_8UC1);
+	mat_dst_gray = Mat(mat_src_gray.size(), CV_8UC1);
 
-	int dstStride = mat_gray_dst.cols * mat_gray_dst.channels();
+	int dstStride = mat_dst_gray.cols * mat_dst_gray.channels();
 	int dst_yushu = dstStride % 4;
 	if (dst_yushu != 0)
 	{
 		dstStride +=  4 - dst_yushu;
 	}
 
-	int srcStride = mat_src.cols * mat_src.channels();
+	int srcStride = mat_src_gray.cols * mat_src_gray.channels();
 	int src_yushu = srcStride % 4;
 	if (src_yushu != 0)
 	{
@@ -494,8 +498,8 @@ void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src, 
 	int d = 0, max = 0;
 
 	// data pointers
-	const uchar* src = mat_src.data;
-	uchar* dst = mat_gray_dst.data;
+	const uchar* src = mat_src_gray.data;
+	uchar* dst = mat_dst_gray.data;
 
 	// allign pointers
 	src += srcStride * startY + startX;
@@ -540,7 +544,7 @@ void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src, 
 	// draw black rectangle to remove those pixels, which were not processed
 	// (this needs to be done for those cases, when filter is applied "in place" -
 	// source image is modified instead of creating new copy)
-	cv::rectangle( mat_gray_dst, rect, Scalar(0));
+	cv::rectangle( mat_dst_gray, rect, Scalar(0));
 }
 
 CBusin_OpenCV_Filter_Tool_Inst CBusin_OpenCV_Filter_Tool_Inst::ms_inst;
