@@ -173,7 +173,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_Sobel_sketch()
 int CBusin_OpenCV_Filter_Tool_Inst::test_differenceOfGaussian()
 {
 	string str_test_imgs_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_input";
-	string str_output_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_output";
+	string str_output_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_output/differenceOfGaussian";
 	vector<string> vec_files_path;
 	int ret = sp::get_filenames(str_test_imgs_dir, vec_files_path);
 	if (ret)
@@ -193,8 +193,8 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_differenceOfGaussian()
 		//二值化
 		Mat mat_binary;
 		cv::threshold(mat_sketch, mat_binary, 7, 255, cv::THRESH_BINARY_INV);
-		imshow("mat_binary", mat_binary);
-		waitKey();
+ 		imshow("mat_binary", mat_binary);
+ 		waitKey();
 		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
 			+  "_result.jpg";
 		imwrite(str_dst_img_path, mat_binary);
@@ -316,12 +316,12 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_difference_Edge_Detect()
 	for (int i = 0; i != vec_files_path.size(); ++i)
 	{
 		std::string str_img_path = vec_files_path[i];
-		Mat src = imread(str_img_path,1);
-		int width = src.cols;
-		int heigh = src.rows;
+		Mat mat_src_bgr = imread(str_img_path, 1);
+		int width = mat_src_bgr.cols;
+		int heigh = mat_src_bgr.rows;
 		Mat mat_dst_gray;
 		Mat mat_src_gray;
-		cv::cvtColor(src, mat_src_gray, CV_BGR2GRAY);
+		cv::cvtColor(mat_src_bgr, mat_src_gray, CV_BGR2GRAY);
 		difference_Edge_Detect(mat_src_gray, mat_dst_gray, Rect(0, 0, width, heigh));
 		Mat img_for_show;
 		cv::resize(mat_dst_gray, img_for_show, Size(mat_dst_gray.cols / 3, mat_dst_gray.rows / 4));
@@ -329,12 +329,17 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_difference_Edge_Detect()
 		//二值化
 		Mat mat_binary;
 		//TODO::阈值应该和原图有关，如何设置这个阈值呢？
-		cv::threshold(mat_dst_gray, mat_binary, 10, 255, cv::THRESH_BINARY_INV);
+		int nThreshold = 20; //值越大，细节越少
+		cv::threshold(mat_dst_gray, mat_binary, nThreshold, 255, cv::THRESH_BINARY_INV);
 // 		imshow("mat_binary", mat_binary);
 // 		waitKey();
 		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
 			+  "_result.jpg";
 		imwrite(str_dst_img_path, mat_binary);
+		Mat mat_inverted_gray;//反色的灰度图
+		//反色
+		addWeighted(mat_dst_gray, -1, NULL, 0, 255, mat_inverted_gray);
+		imwrite(str_dst_img_path + "_sumiao.jpg", mat_inverted_gray);
 	}
 	return 0;
 }
@@ -457,14 +462,51 @@ int CBusin_OpenCV_Filter_Tool_Inst::differenceOfGaussian(const Mat& mat_src, Mat
 	Mat mat_gray;
 	cv::cvtColor(mat_src, mat_gray, COLOR_BGR2GRAY);
 	//用两个不同的模糊半径对灰度图像执行高斯模糊（取得两幅高斯模糊图像）
+	//TODO::不同的半径以及sigma对结果都有影响
 	Mat mat_gaussian_blur_1;
 	int GAUSSIAN_BLUR_FILTER_SIZE_1 = 3;
-	cv::GaussianBlur(mat_gray, mat_gaussian_blur_1, Size(GAUSSIAN_BLUR_FILTER_SIZE_1, GAUSSIAN_BLUR_FILTER_SIZE_1), 5);
+	cv::GaussianBlur(mat_gray, mat_gaussian_blur_1, Size(GAUSSIAN_BLUR_FILTER_SIZE_1, GAUSSIAN_BLUR_FILTER_SIZE_1), 2);
 	Mat mat_gaussian_blur_2;
-	int GAUSSIAN_BLUR_FILTER_SIZE_2 = 13;
-	cv::GaussianBlur(mat_gray, mat_gaussian_blur_2, Size(GAUSSIAN_BLUR_FILTER_SIZE_2, GAUSSIAN_BLUR_FILTER_SIZE_2), 5);
+	int GAUSSIAN_BLUR_FILTER_SIZE_2 = 21;
+	cv::GaussianBlur(mat_gray, mat_gaussian_blur_2, Size(GAUSSIAN_BLUR_FILTER_SIZE_2, GAUSSIAN_BLUR_FILTER_SIZE_2), 20);
 	//将两幅高斯模糊图像做减法，得到一幅包含边缘点的结果图像
 	cv::absdiff(mat_gaussian_blur_1, mat_gaussian_blur_2, mat_dst);
+	//TODO::下面逻辑待尝试
+// 	if ( normalize && radius1 != radius2 ) {
+// 		int[] pixels = null;
+// 		int max = 0;
+// 		for ( int y = 0; y < height; y++ ) {
+// 			pixels = getRGB( image2, 0, y, width, 1, pixels );
+// 			for ( int x = 0; x < width; x++ ) {
+// 				int rgb = pixels[x];
+// 				int r = (rgb >> 16) & 0xff;
+// 				int g = (rgb >> 8) & 0xff;
+// 				int b = rgb & 0xff;
+// 				if ( r > max )
+// 					max = r;
+// 				if ( g > max )
+// 					max = g;
+// 				if ( b > max )
+// 					max = b;
+// 			}
+// 		}
+// 
+// 		for ( int y = 0; y < height; y++ ) {
+// 			pixels = getRGB( image2, 0, y, width, 1, pixels );
+// 			for ( int x = 0; x < width; x++ ) {
+// 				int rgb = pixels[x];
+// 				int r = (rgb >> 16) & 0xff;
+// 				int g = (rgb >> 8) & 0xff;
+// 				int b = rgb & 0xff;
+// 				r = r * 255 / max;
+// 				g = g * 255 / max;
+// 				b = b * 255 / max;
+// 				pixels[x] = (rgb & 0xff000000) | (r << 16) | (g << 8) | b;
+// 			}
+// 			setRGB( image2, 0, y, width, 1, pixels );
+// 		}
+// 
+// 	}
 	return 0;
 }
 
