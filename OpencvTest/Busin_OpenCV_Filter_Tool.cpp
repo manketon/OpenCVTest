@@ -509,7 +509,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::differenceOfGaussian(const Mat& mat_src, Mat
 // 	}
 	return 0;
 }
-
+//max( |P1-P5|, |P2-P6|, |P3-P7|, |P4-P8| )
 void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src_gray, cv::Mat& mat_dst_gray, const cv::Rect& rect)
 {
 	//TODO::当Mat行与行直接不是连续的，是否有问题？
@@ -520,19 +520,9 @@ void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src_g
 	int stopY   = startY + rect.height - 2;
 	mat_dst_gray = Mat(mat_src_gray.size(), CV_8UC1);
 
-	int dstStride = mat_dst_gray.cols * mat_dst_gray.channels();
-	int dst_yushu = dstStride % 4;
-	if (dst_yushu != 0)
-	{
-		dstStride +=  4 - dst_yushu;
-	}
+	const int dstStride = mat_dst_gray.step[0];
 
-	int srcStride = mat_src_gray.cols * mat_src_gray.channels();
-	int src_yushu = srcStride % 4;
-	if (src_yushu != 0)
-	{
-		srcStride += 4 - src_yushu;
-	}
+	const int srcStride = mat_src_gray.step[0];
 
 	const int dstOffset = dstStride - rect.width + 2;
 	const int srcOffset = srcStride - rect.width + 2;
