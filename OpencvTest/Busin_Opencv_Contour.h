@@ -46,32 +46,9 @@ void thresh_callback(int, void* )
 class CBusin_OpenCV_Contour_Tool
 {
 public:
-	static CBusin_OpenCV_Contour_Tool& instance()
-	{
-		static CBusin_OpenCV_Contour_Tool obj;
-		return obj;
-	}
+	static CBusin_OpenCV_Contour_Tool& instance();
 	/** @function main */
-	int test(const string& str_img_file_path)
-	{
-		/// 加载源图像
-		src = imread(str_img_file_path.c_str(), 1);
-
-		/// 转成灰度并模糊化降噪
-		cvtColor( src, src_gray, CV_BGR2GRAY );
-//		blur( src_gray, src_gray, Size(3,3) );
-
-		/// 创建窗体
-		char* source_window = "Source";
-		namedWindow( source_window, CV_WINDOW_AUTOSIZE );
-		imshow( source_window, src );
-
-		createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
-		thresh_callback( 0, 0 );
-
-		waitKey(0);
-		return(0);
-	}
+	int test(const string& str_img_file_path);
 
 protected:
 private:

@@ -23,60 +23,11 @@ using namespace cv;
 class CBusin_Opencv_Transform_Tool
 {
 public:
-	static CBusin_Opencv_Transform_Tool& instance()
-	{
-		static CBusin_Opencv_Transform_Tool obj;
-		return obj;
-	}
-	Mat image_rotate(const Mat & src_mat, const cv::Point &center_point, double dDegree, double scale)
-	{
-		CvPoint2D32f center;
-		center.x = float(center_point.x);
-		center.y = float(center_point.y);
-
-		//计算二维旋转的仿射变换矩阵
-		Mat M = cv::getRotationMatrix2D(center, dDegree, scale);
-
-		Mat dst_mat;
-		cv::warpAffine(src_mat, dst_mat, M, cvSize(src_mat.cols, src_mat.rows), CV_INTER_LINEAR);
-		return dst_mat;
-	}
+	static CBusin_Opencv_Transform_Tool& instance();
+	Mat image_rotate(const Mat & src_mat, const cv::Point &center_point, double dDegree, double scale);
 	//
 	cv::Mat rotate_image__and_shift(const cv::Mat& src_img_mat, const cv::Point &center_point
-		, int degree, float fX_shift, float fY_shift)
-	{
-		degree = -degree;
-		double angle = degree  * CV_PI / 180.; // 弧度
-		double a = sin(angle), b = cos(angle);
-		int width = src_img_mat.cols;
-		int height = src_img_mat.rows;
-		int width_rotate = int(height * fabs(a) + width * fabs(b)) + fX_shift * 2;
-		int height_rotate = int(width * fabs(a) + height * fabs(b)) + fY_shift * 2;
-		//旋转数组map
-		// [ m0  m1  m2 ] ===>  [ A11  A12   b1 ]
-
-		// [ m3  m4  m5 ] ===>  [ A21  A22   b2 ]
-		float map[6] = {0};
-		Mat map_matrix = Mat(2, 3, CV_32F, map);
-		// 旋转中心
-		CvPoint2D32f center = cvPoint2D32f(width / 2, height / 2);
-		CvMat map_matrix2 = map_matrix;
-		//这里传入的应该是角度而非弧度，即不需要CV_PI / 180
-		cv2DRotationMatrix(center, degree, 1.0, &map_matrix2);
-		map[2] += (width_rotate - width) / 2 + fX_shift;
-		map[5] += (height_rotate - height) / 2 + fY_shift;
-		Mat img_rotate;
-
-		//对图像做仿射变换
-
-		//CV_WARP_FILL_OUTLIERS - 填充所有输出图像的象素。
-
-		//如果部分象素落在输入图像的边界外，那么它们的值设定为 fillval.
-
-		//CV_WARP_INVERSE_MAP - 指定 map_matrix 是输出图像到输入图像的反变换，
-		cv::warpAffine(src_img_mat, img_rotate, map_matrix, Size(width_rotate, height_rotate), INTER_NEAREST, 0, 0);
-		return img_rotate;
-	}
+		, int degree, float fX_shift, float fY_shift);
 
 	/************************************
 	* Method:    rotate_image_without_loss
@@ -90,60 +41,10 @@ public:
 	*Parameter: float fScale -[in]  整体缩放比例 
 	*Parameter: const Scalar& borderValue -[in]  使用插值算法来扩展边界时的颜色值
 	************************************/
-	cv::Mat rotate_image_without_loss(const cv::Mat& src_img_mat, const CvPoint2D32f& center, double degree, float fScale, const Scalar& borderValue = Scalar(0, 0, 0))
-	{
-		degree = -degree;
- 		double angle = degree  * CV_PI / 180.; // 弧度
- 		double a = sin(angle), b = cos(angle);
-		int width = src_img_mat.cols;
-		int height = src_img_mat.rows;
-		int width_rotate = int(height * fabs(a) + width * fabs(b));
-		int height_rotate = int(width * fabs(a) + height * fabs(b));
-		//旋转数组map
-		// [ m0  m1  m2 ] ===>  [ A11  A12   b1 ]
-
-		// [ m3  m4  m5 ] ===>  [ A21  A22   b2 ]
-		float map[6] = {0};
-		Mat map_matrix = Mat(2, 3, CV_32F, map);
-		// 旋转中心
-//		CvPoint2D32f center = cvPoint2D32f(width / 2, height / 2);
-		CvMat map_matrix2 = map_matrix;
-		cv2DRotationMatrix(center, degree, fScale, &map_matrix2);
-		map[2] += (width_rotate - width) / 2;
-		map[5] += (height_rotate - height) / 2;
-		Mat img_rotated;
-
-		//对图像做仿射变换
-
-		//CV_WARP_FILL_OUTLIERS - 填充所有输出图像的象素。
-
-		//如果部分象素落在输入图像的边界外，那么它们的值设定为 fillval.
-
-		//CV_WARP_INVERSE_MAP - 指定 map_matrix 是输出图像到输入图像的反变换，
-		cv::warpAffine(src_img_mat, img_rotated, map_matrix, Size(width_rotate, height_rotate), 1, 0, borderValue);
-		return img_rotated;
-	}
+	cv::Mat rotate_image_without_loss(const cv::Mat& src_img_mat, const CvPoint2D32f& center, double degree, float fScale, const Scalar& borderValue = Scalar(0, 0, 0));
 	cv::Mat rotate_image_without_loss(const cv::Mat& src_img_mat, const CvPoint2D32f& center
 		, double degree, float fScale, const Rect& rect_sub_src, Rect& rect_sub_dst_shrink, const Scalar& borderValue = Scalar(0, 0, 0));
-	cv::Point get_dst_point_after_affine(const cv::Point& src_point, const Mat& affine_transform_mat)
-	{		cv::Point dst_point;
-		if (affine_transform_mat.type() == CV_32FC1)
-		{
-			dst_point.x = cvRound(affine_transform_mat.at<float>(0, 0) * src_point.x + affine_transform_mat.at<float>(0, 1) * src_point.y + affine_transform_mat.at<float>(0, 2));
-			dst_point.y = cvRound(affine_transform_mat.at<float>(1, 0) * src_point.x + affine_transform_mat.at<float>(1, 1) * src_point.y + affine_transform_mat.at<float>(1, 2));
-		}
-		else if (affine_transform_mat.type() == CV_64FC1)
-		{
-			dst_point.x = cvRound(affine_transform_mat.at<double>(0, 0) * src_point.x + affine_transform_mat.at<double>(0, 1) * src_point.y + affine_transform_mat.at<double>(0, 2));
-			dst_point.y = cvRound(affine_transform_mat.at<double>(1, 0) * src_point.x + affine_transform_mat.at<double>(1, 1) * src_point.y + affine_transform_mat.at<double>(1, 2));
-		}
-		else
-		{
-			printf("func:%s | error\n", __FUNCTION__);
-			exit(-1);
-		}
-		return dst_point;
-	}
+	cv::Point get_dst_point_after_affine(const cv::Point& src_point, const Mat& affine_transform_mat);
 	/************************************
 	* Method:    get_rotation_matrix_without_loss
 	* Brief:  获取进行无损失变换所需的仿射变换矩阵以及结果矩阵的大小
@@ -158,28 +59,7 @@ public:
 	*Parameter: Size& dSize 无损变换后的结果矩阵的大小
 	************************************/
 	int get_rotation_matrix_without_loss(const cv::Mat& src_img_mat, const CvPoint2D32f& center
-		, double degree, float fScale, Mat& mat_rotation, Size& dSize)
-	{
-		degree = -degree;
-		double angle = degree  * CV_PI / 180.; // 弧度
-		double a = sin(angle), b = cos(angle);
-		int width = src_img_mat.cols;
-		int height = src_img_mat.rows;
-		int width_rotate = int(height * fabs(a) + width * fabs(b));
-		int height_rotate = int(width * fabs(a) + height * fabs(b));
-		//旋转数组map
-		// [ m0  m1  m2 ] ===>  [ A11  A12   b1 ]
-		// [ m3  m4  m5 ] ===>  [ A21  A22   b2 ]
-		float map[6] = {0};
-		Mat map_matrix = Mat(2, 3, CV_32F, map);
-		CvMat map_matrix2 = map_matrix;
-		cv2DRotationMatrix(center, degree, fScale, &map_matrix2);
-		map[2] += (width_rotate - width) / 2;
-		map[5] += (height_rotate - height) / 2;
-		dSize = Size(width_rotate, height_rotate);
-		mat_rotation = map_matrix.clone();
-		return 0;
-	}
+		, double degree, float fScale, Mat& mat_rotation, Size& dSize);
 
 protected:
 private:
