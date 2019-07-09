@@ -33,6 +33,15 @@
     <ClCompile Include="Boost_Common_Tool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Busin_Opencv_Contour.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CBusin_OpenCV_Vector_Tool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Busin_OpenCV_Connected_Graph.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CBusin_Opencv_Transform_Tool.h">
@@ -63,6 +72,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Boost_Common_Tool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Busin_OpenCV_Connected_Graph.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -939,7 +939,7 @@ bool CInscribed_Polygon_Tool::is_out_of_contour(const Mat& mat_src_binary_gray, 
 	}
 	else
 	{
-		false;
+		return false;
 	}
 }
 
