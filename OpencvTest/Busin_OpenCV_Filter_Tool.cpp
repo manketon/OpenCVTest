@@ -22,8 +22,21 @@
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include "Busin_OpenCV_Common_Tool.h"
+#include <boost/math/constants/constants.hpp>
+#include <boost/algorithm/clamp.hpp>
 using namespace cv;
 using namespace std;
+static PhotocopyVals pvals =
+{
+	8.0,  /* mask_radius */
+	0.8,  /* sharpness */
+	0.75, /* threshold */
+	0.2,  /* pct_black */
+	0.2   /* pct_white */
+};
+#define GAMMA           1.0
+#define EPSILON         2
+
 CBusin_OpenCV_Filter_Tool_Inst& CBusin_OpenCV_Filter_Tool_Inst::instance()
 {
 	return ms_inst;
@@ -302,6 +315,62 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_photocopy()
 	return 0;
 }
 
+int CBusin_OpenCV_Filter_Tool_Inst::test_photocopy_myself()
+{
+	string str_test_imgs_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_input";
+	string str_output_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_output/myself_photocopy";
+	vector<string> vec_files_path;
+	int ret = sp::get_filenames(str_test_imgs_dir, vec_files_path);
+	if (ret)
+	{
+		std::cout << __FUNCTION__ << " | error, ret:" << ret << endl;
+		return ret;
+	}
+	for (int i = 0; i != vec_files_path.size(); ++i)
+	{
+		std::string str_img_path = vec_files_path[i];
+		Mat mat_src_bgr = imread(str_img_path, 1);
+		int width = mat_src_bgr.cols;
+		int heigh = mat_src_bgr.rows;
+		Mat mat_dst_gray;
+		Mat mat_src_gray;
+		cv::cvtColor(mat_src_bgr, mat_src_gray, CV_BGR2GRAY);
+		photocopy_myself(mat_src_gray, 11, 0.75, mat_dst_gray);
+		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
+			+  "_result.jpg";
+		imwrite(str_dst_img_path + "_sumiao.jpg", mat_dst_gray);
+	}
+	return 0;
+}
+
+int CBusin_OpenCV_Filter_Tool_Inst::test_photocopy_GIMP()
+{
+	string str_test_imgs_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_input";
+	string str_output_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_output/gimp_photocopy";
+	vector<string> vec_files_path;
+	int ret = sp::get_filenames(str_test_imgs_dir, vec_files_path);
+	if (ret)
+	{
+		std::cout << __FUNCTION__ << " | error, ret:" << ret << endl;
+		return ret;
+	}
+	for (int i = 0; i != vec_files_path.size(); ++i)
+	{
+		std::string str_img_path = vec_files_path[i];
+		Mat mat_src_bgr = imread(str_img_path, 1);
+		int width = mat_src_bgr.cols;
+		int heigh = mat_src_bgr.rows;
+		Mat mat_dst_gray;
+		Mat mat_src_gray;
+		cv::cvtColor(mat_src_bgr, mat_src_gray, CV_BGR2GRAY);
+		photocopy_gimp(mat_src_gray, 11, 0.75, mat_dst_gray);
+		string str_dst_img_path = str_output_dir + "/" + boost::filesystem::path(str_img_path).filename().string()
+			+  "_result.jpg";
+		imwrite(str_dst_img_path + "_sumiao.jpg", mat_dst_gray);
+	}
+	return 0;
+}
+
 int CBusin_OpenCV_Filter_Tool_Inst::test_difference_Edge_Detect()
 {
 	string str_test_imgs_dir = "C:/Users/dell.dell-PC/Desktop/滤镜开发图片/开发/test_input";
@@ -577,6 +646,509 @@ void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src_g
 	// (this needs to be done for those cases, when filter is applied "in place" -
 	// source image is modified instead of creating new copy)
 	cv::rectangle( mat_dst_gray, rect, Scalar(0));
+}
+
+void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, size_t nMask_radius, double dThreshold, Mat& mat_gray_result)
+{
+	int          x, y, width, height;
+	int          bytes; //每个像素所占字节数
+	bool      has_alpha;
+	uchar       *dest1; //dest1 for blur radius
+	uchar       *dest2;//dest2 for mask radius
+	uchar       *src1, *sp_p1, *sp_m1;
+	uchar       *src2, *sp_p2, *sp_m2;
+	double       n_p1[5], n_m1[5];
+	double       n_p2[5], n_m2[5];
+	double       d_p1[5], d_m1[5];
+	double       d_p2[5], d_m2[5];
+	double       bd_p1[5], bd_m1[5];
+	double       bd_p2[5], bd_m2[5];
+	double      *val_p1, *val_m1, *vp1, *vm1;
+	double      *val_p2, *val_m2, *vp2, *vm2;
+	int          i, j;
+	int          row, col;
+	int          terms;
+	int          progress, max_progress;
+	int          initial_p1[4];
+	int          initial_p2[4];
+	int          initial_m1[4];
+	int          initial_m2[4];
+	double       radius;
+	double       val;
+	double       std_dev1;
+	double       std_dev2;
+	double       ramp_down;
+	double       ramp_up;
+	//获取宽、高及待处理的起始位置
+	x = 0, y = 0;
+	width = mat_src_gray.cols, height = mat_src_gray.rows;
+	bytes     = mat_src_gray.elemSize();
+	has_alpha = false;
+
+	val_p1 = new double[MAX (width, height)];
+
+	val_p2 = new double[MAX (width, height)];
+	val_m1 = new double[MAX (width, height)];
+	val_m2 = new double[MAX (width, height)];
+
+	dest1 = new uchar[width * height];
+	dest2 = new uchar[width * height];
+
+	progress = 0;
+	max_progress = width * height * 3;
+	uchar *src_ptr  = mat_src_gray.data;
+	uchar *dest_ptr = dest1 + (0 - y) * width + (0 - x);
+
+	for (row = 0; row < height; row++)
+	{
+		for (col = 0; col < width; col++)
+		{
+			/* desaturate */
+			dest_ptr[col] = (uchar) src_ptr[col * bytes];
+
+			/* compute  transfer */
+			val = pow (dest_ptr[col], (1.0 / GAMMA));
+			dest_ptr[col] = (uchar) boost::algorithm::clamp(val, 0, 255);
+		}
+
+		src_ptr  += mat_src_gray.step[0];
+		dest_ptr += width;
+	}
+
+
+	/*  Calculate the standard deviations  from blur and mask radius */
+	radius   = MAX (1.0, 10 * (1.0 - pvals.sharpness));
+	radius   = fabs (radius) + 1.0;
+	std_dev1 = sqrt (-(radius * radius) / (2 * log (1.0 / 255.0)));
+
+	radius   = fabs (pvals.mask_radius) + 1.0;
+	std_dev2 = sqrt (-(radius * radius) / (2 * log (1.0 / 255.0)));
+
+	/*  derive the constants for calculating the gaussian from the std dev  */
+	find_constants (n_p1, n_m1, d_p1, d_m1, bd_p1, bd_m1, std_dev1);
+	find_constants (n_p2, n_m2, d_p2, d_m2, bd_p2, bd_m2, std_dev2);
+
+	/*  First the vertical pass  */
+	for (col = 0; col < width; col++)
+	{
+		memset (val_p1, 0, height * sizeof (double));
+		memset (val_p2, 0, height * sizeof (double));
+		memset (val_m1, 0, height * sizeof (double));
+		memset (val_m2, 0, height * sizeof (double));
+
+		src1  = dest1 + col;
+		sp_p1 = src1;
+		sp_m1 = src1 + (height - 1) * width;
+		vp1   = val_p1;
+		vp2   = val_p2;
+		vm1   = val_m1 + (height - 1);
+		vm2   = val_m2 + (height - 1);
+
+		/*  Set up the first vals  */
+		initial_p1[0] = sp_p1[0];
+		initial_m1[0] = sp_m1[0];
+
+		for (row = 0; row < height; row++)
+		{
+			double *vpptr1, *vmptr1;
+			double *vpptr2, *vmptr2;
+
+			terms = (row < 4) ? row : 4;
+
+			vpptr1 = vp1; vmptr1 = vm1;
+			vpptr2 = vp2; vmptr2 = vm2;
+
+			for (i = 0; i <= terms; i++)
+			{
+				*vpptr1 += n_p1[i] * sp_p1[-i * width] - d_p1[i] * vp1[-i];
+				*vmptr1 += n_m1[i] * sp_m1[i * width] - d_m1[i] * vm1[i];
+
+				*vpptr2 += n_p2[i] * sp_p1[-i * width] - d_p2[i] * vp2[-i];
+				*vmptr2 += n_m2[i] * sp_m1[i * width] - d_m2[i] * vm2[i];
+			}
+
+			for (j = i; j <= 4; j++)
+			{
+				*vpptr1 += (n_p1[j] - bd_p1[j]) * initial_p1[0];
+				*vmptr1 += (n_m1[j] - bd_m1[j]) * initial_m1[0];
+
+				*vpptr2 += (n_p2[j] - bd_p2[j]) * initial_p1[0];
+				*vmptr2 += (n_m2[j] - bd_m2[j]) * initial_m1[0];
+			}
+
+			sp_p1 += width;
+			sp_m1 -= width;
+			vp1   += 1;
+			vp2   += 1;
+			vm1   -= 1;
+			vm2   -= 1;
+		}
+
+		transfer_pixels(val_p1, val_m1, dest1 + col, width, height);
+		transfer_pixels(val_p2, val_m2, dest2 + col, width, height);
+	}
+
+	for (row = 0; row < height; row++)
+	{
+		memset (val_p1, 0, width * sizeof (double));
+		memset (val_p2, 0, width * sizeof (double));
+		memset (val_m1, 0, width * sizeof (double));
+		memset (val_m2, 0, width * sizeof (double));
+
+		src1 = dest1 + row * width;
+		src2 = dest2 + row * width;
+
+		sp_p1 = src1;
+		sp_p2 = src2;
+		sp_m1 = src1 + width - 1;
+		sp_m2 = src2 + width - 1;
+		vp1   = val_p1;
+		vp2   = val_p2;
+		vm1   = val_m1 + width - 1;
+		vm2   = val_m2 + width - 1;
+
+		/*  Set up the first vals  */
+		initial_p1[0] = sp_p1[0];
+		initial_p2[0] = sp_p2[0];
+		initial_m1[0] = sp_m1[0];
+		initial_m2[0] = sp_m2[0];
+
+		for (col = 0; col < width; col++)
+		{
+			double *vpptr1, *vmptr1;
+			double *vpptr2, *vmptr2;
+
+			terms = (col < 4) ? col : 4;
+
+			vpptr1 = vp1; vmptr1 = vm1;
+			vpptr2 = vp2; vmptr2 = vm2;
+
+			for (i = 0; i <= terms; i++)
+			{
+				*vpptr1 += n_p1[i] * sp_p1[-i] - d_p1[i] * vp1[-i];
+				*vmptr1 += n_m1[i] * sp_m1[i] - d_m1[i] * vm1[i];
+
+				*vpptr2 += n_p2[i] * sp_p2[-i] - d_p2[i] * vp2[-i];
+				*vmptr2 += n_m2[i] * sp_m2[i] - d_m2[i] * vm2[i];
+			}
+
+			for (j = i; j <= 4; j++)
+			{
+				*vpptr1 += (n_p1[j] - bd_p1[j]) * initial_p1[0];
+				*vmptr1 += (n_m1[j] - bd_m1[j]) * initial_m1[0];
+
+				*vpptr2 += (n_p2[j] - bd_p2[j]) * initial_p2[0];
+				*vmptr2 += (n_m2[j] - bd_m2[j]) * initial_m2[0];
+			}
+
+			sp_p1 ++;
+			sp_p2 ++;
+			sp_m1 --;
+			sp_m2 --;
+			vp1 ++;
+			vp2 ++;
+			vm1 --;
+			vm2 --;
+		}
+
+		transfer_pixels (val_p1, val_m1, dest1 + row * width, 1, width);
+		transfer_pixels (val_p2, val_m2, dest2 + row * width, 1, width);
+	}
+
+	/* Compute the ramp value which sets 'pct_black' % of the darkened pixels black */
+	ramp_down = compute_ramp (dest1, dest2, width * height, pvals.pct_black, 1);
+	ramp_up   = compute_ramp (dest1, dest2, width * height, 1.0 - pvals.pct_white, 0);
+
+	/* Initialize the pixel regions. */
+	mat_gray_result = Mat(mat_src_gray.size(), CV_8UC1, Scalar(255));
+	src_ptr  = mat_src_gray.data;
+	dest_ptr = mat_gray_result.data;
+	uchar  *blur_ptr = dest1 + (0 - y) * width + (0 - x);
+	uchar  *avg_ptr  = dest2 + (0 - y) * width + (0 - x);
+	
+	for (row = 0; row < height; row++)
+	{
+		for (col = 0; col < width; col++)
+		{
+			double  lightness = 0.0;
+			if (avg_ptr[col] > EPSILON)
+			{
+				double diff = (double) blur_ptr[col] / (double) avg_ptr[col];
+				double mult = 0.0;
+				if (diff < pvals.threshold)
+				{
+					if (ramp_down == 0.0)
+						mult = 0.0;
+					else
+						mult = (ramp_down - MIN (ramp_down,
+						(pvals.threshold - diff))) / ramp_down;
+					lightness = boost::algorithm::clamp(blur_ptr[col] * mult, 0, 255);
+				}
+				else
+				{
+					if (ramp_up == 0.0)
+						mult = 1.0;
+					else
+						mult = MIN (ramp_up,
+						(diff - pvals.threshold)) / ramp_up;
+
+					lightness = 255 - (1.0 - mult) * (255 - blur_ptr[col]);
+					lightness = boost::algorithm::clamp(lightness, 0, 255);
+				}
+			}
+			else
+			{
+				lightness = 0;
+			}
+
+			if (bytes < 3)
+			{
+				dest_ptr[col * bytes] = (uchar) lightness;
+				if (has_alpha)
+					dest_ptr[col * bytes + 1] = src_ptr[col * bytes + 1];
+			}
+			else
+			{
+				dest_ptr[col * bytes + 0] = lightness;
+				dest_ptr[col * bytes + 1] = lightness;
+				dest_ptr[col * bytes + 2] = lightness;
+
+				if (has_alpha)
+					dest_ptr[col * bytes + 3] = src_ptr[col * bytes + 3];
+			}
+		}
+
+		src_ptr  += mat_src_gray.step[0];
+		dest_ptr += mat_gray_result.step[0];
+		blur_ptr += width;
+		avg_ptr  += width;
+	}
+
+	/*  free up buffers  */
+	delete[] val_p1;
+	delete[] val_p2;
+	delete[] val_m1;
+	delete[] val_m2;
+	delete[] dest1;
+	delete[] dest2;
+}
+
+//TODO::此算法还有待调整，目前一点效果都不行
+int CBusin_OpenCV_Filter_Tool_Inst::photocopy_myself(const Mat& mat_src_gray, size_t nMask_radius, double dThreshold, Mat& mat_gray_result)
+{
+	//第一次均值滤波
+	size_t nBlur_radius = nMask_radius / 3;
+	Mat mat_dest1_after_blur;//for nBlur_radius
+	cv::blur(mat_src_gray, mat_dest1_after_blur, cv::Size(nBlur_radius, nBlur_radius));
+	//第二次均值滤波
+	Mat mat_dest2_after_blur;//for nMask_radius
+	cv::GaussianBlur(mat_src_gray, mat_dest2_after_blur, cv::Size(nMask_radius, nMask_radius), 5);
+	//计算dest1和dest2之间的Ramp_up和Ramp_down
+	size_t nWidth = mat_src_gray.cols;
+	size_t nHeight = mat_src_gray.rows;
+	double ramp_down = compute_ramp(mat_dest1_after_blur.data, mat_dest2_after_blur.data, nWidth * nHeight, pvals.pct_black, 1);
+	double ramp_up   = compute_ramp(mat_dest1_after_blur.data, mat_dest2_after_blur.data, nWidth * nHeight, 1.0 - pvals.pct_white, 0);
+	mat_gray_result = Mat(mat_src_gray.size(), CV_8UC1, Scalar(255));
+	for (int row = 0; row < nHeight; row++)
+	{
+		for (int col = 0; col < nWidth; col++)
+		{
+			double lightness = 0.0;
+			if (mat_dest2_after_blur.data[col] > EPSILON)
+			{
+				double diff = (double) mat_dest1_after_blur.data[col] / (double) mat_dest2_after_blur.data[col];
+				double mult = 0.0;
+				if (diff < pvals.threshold)
+				{
+					if (ramp_down == 0.0)
+						mult = 0.0;
+					else
+						mult = (ramp_down - MIN (ramp_down,(pvals.threshold - diff))) / ramp_down;
+					lightness = boost::algorithm::clamp(mat_dest1_after_blur.data[col] * mult, 0, 255);
+				}
+				else
+				{
+					if (ramp_up == 0.0)
+						mult = 1.0;
+					else
+						mult = MIN (ramp_up,(diff - pvals.threshold)) / ramp_up;
+
+					lightness = 255 - (1.0 - mult) * (255 - mat_dest1_after_blur.data[col]);
+					lightness = boost::algorithm::clamp(lightness, 0, 255);
+				}
+			}
+			else
+			{
+				lightness = 0;
+			}
+			mat_gray_result.at<uchar>(row, col) = lightness;
+		}
+	}
+	return 0;
+}
+
+void CBusin_OpenCV_Filter_Tool_Inst::transfer_pixels(double *pdScr1, double *pdSrc2, uchar *pcDest, int nJump, int nWidth)
+{
+	double dSum = 0.0;
+
+	for(int i = 0; i < nWidth; i++)
+	{
+		dSum = pdScr1[i] + pdSrc2[i];
+		if (dSum > 255) dSum = 255;
+		else if(dSum < 0) dSum = 0;
+
+		*pcDest = (uchar) dSum;
+
+		pcDest += nJump;
+	}
+}
+
+void CBusin_OpenCV_Filter_Tool_Inst::find_constants(double n_p[], double n_m[], double d_p[], double d_m[], double bd_p[], double bd_m[], double std_dev)
+{
+	int    i = 0;
+	double constants[8] = {0};
+	double nDiv = 0.0;
+
+	/*  The constants used in the implementation of a casual sequence
+	*  using a 4th order approximation of the gaussian operator
+	*/
+
+	nDiv = sqrt (2 * boost::math::constants::pi<double>()) * std_dev;
+	constants [0] = -1.783 / std_dev;
+	constants [1] = -1.723 / std_dev;
+	constants [2] = 0.6318 / std_dev;
+	constants [3] = 1.997  / std_dev;
+	constants [4] = 1.6803 / nDiv;
+	constants [5] = 3.735 / nDiv;
+	constants [6] = -0.6803 / nDiv;
+	constants [7] = -0.2598 / nDiv;
+
+	n_p [0] = constants[4] + constants[6];
+	n_p [1] = exp (constants[1]) *
+		(constants[7] * sin (constants[3]) -
+		(constants[6] + 2 * constants[4]) * cos (constants[3])) +
+		exp (constants[0]) *
+		(constants[5] * sin (constants[2]) -
+		(2 * constants[6] + constants[4]) * cos (constants[2]));
+	n_p [2] = 2 * exp (constants[0] + constants[1]) *
+		((constants[4] + constants[6]) * cos (constants[3]) * cos (constants[2]) -
+		constants[5] * cos (constants[3]) * sin (constants[2]) -
+		constants[7] * cos (constants[2]) * sin (constants[3])) +
+		constants[6] * exp (2 * constants[0]) +
+		constants[4] * exp (2 * constants[1]);
+	n_p [3] = exp (constants[1] + 2 * constants[0]) *
+		(constants[7] * sin (constants[3]) - constants[6] * cos (constants[3])) +
+		exp (constants[0] + 2 * constants[1]) *
+		(constants[5] * sin (constants[2]) - constants[4] * cos (constants[2]));
+	n_p [4] = 0.0;
+
+	d_p [0] = 0.0;
+	d_p [1] = -2 * exp (constants[1]) * cos (constants[3]) -
+		2 * exp (constants[0]) * cos (constants[2]);
+	d_p [2] = 4 * cos (constants[3]) * cos (constants[2]) * exp (constants[0] + constants[1]) +
+		exp (2 * constants[1]) + exp (2 * constants[0]);
+	d_p [3] = -2 * cos (constants[2]) * exp (constants[0] + 2 * constants[1]) -
+		2 * cos (constants[3]) * exp (constants[1] + 2 * constants[0]);
+	d_p [4] = exp (2 * constants[0] + 2 * constants[1]);
+
+#ifndef ORIGINAL_READABLE_CODE
+	memcpy(d_m, d_p, 5 * sizeof(double));
+#else
+	for (i = 0; i <= 4; i++)
+		d_m [i] = d_p [i];
+#endif
+
+	n_m[0] = 0.0;
+	for (i = 1; i <= 4; i++)
+		n_m [i] = n_p[i] - d_p[i] * n_p[0];
+
+	{
+		double sum_n_p, sum_n_m, sum_d;
+		double a, b;
+
+		sum_n_p = 0.0;
+		sum_n_m = 0.0;
+		sum_d   = 0.0;
+
+		for (i = 0; i <= 4; i++)
+		{
+			sum_n_p += n_p[i];
+			sum_n_m += n_m[i];
+			sum_d += d_p[i];
+		}
+
+#ifndef ORIGINAL_READABLE_CODE
+		sum_d++;
+		a = sum_n_p / sum_d;
+		b = sum_n_m / sum_d;
+#else
+		a = sum_n_p / (1 + sum_d);
+		b = sum_n_m / (1 + sum_d);
+#endif
+
+		for (i = 0; i <= 4; i++)
+		{
+			bd_p[i] = d_p[i] * a;
+			bd_m[i] = d_m[i] * b;
+		}
+	}
+}
+
+double CBusin_OpenCV_Filter_Tool_Inst::compute_ramp(uchar *dest1, uchar *dest2, int length, double pct_black, int under_threshold)
+{
+	int    hist[2000];
+	int    count;
+	int    i;
+	int    sum;
+
+	memset(hist, 0, sizeof (int) * 2000);
+	count = 0;
+
+	for (i = 0; i < length; i++)
+	{
+		if (*dest2 != 0)
+		{
+			double diff = (double) *dest1 / (double) *dest2;
+
+			if (under_threshold)
+			{
+				if (diff < pvals.threshold)
+				{
+					hist[(int) (diff * 1000)] += 1;
+					count += 1;
+				}
+			}
+			else
+			{
+				if (diff >= pvals.threshold && diff < 2.0)
+				{
+					hist[(int) (diff * 1000)] += 1;
+					count += 1;
+				}
+			}
+		}
+
+		dest1++;
+		dest2++;
+	}
+
+	if (pct_black == 0.0 || count == 0)
+		return (under_threshold ? 1.0 : 0.0);
+
+	sum = 0;
+	for (i = 0; i < 2000; i++)
+	{
+		sum += hist[i];
+		if (((double) sum / (double) count) > pct_black)
+		{
+			if (under_threshold)
+				return (pvals.threshold - (double) i / 1000.0);
+			else
+				return ((double) i / 1000.0 - pvals.threshold);
+		}
+	}
+
+	return (under_threshold ? 0.0 : 1.0);
 }
 
 CBusin_OpenCV_Filter_Tool_Inst CBusin_OpenCV_Filter_Tool_Inst::ms_inst;
