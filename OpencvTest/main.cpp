@@ -331,8 +331,9 @@ int main(int argc, char** argv)
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_differenceOfGaussian();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_difference_IPLB();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_difference_Edge_Detect();
+		CBusin_OpenCV_Filter_Tool_Inst::instance().test_photocopy_GIMP();
 //		CBusin_OpenCV_Connected_Graph::instance().test_connected_graph_img();
-		CBusin_OpenCV_Connected_Graph::instance().test_connected_graph_arr();
+//		CBusin_OpenCV_Connected_Graph::instance().test_connected_graph_arr();
 	}
 	catch (std::exception& e)
 	{
