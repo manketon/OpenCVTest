@@ -22,7 +22,7 @@ typedef struct
 	double  pct_black;//黑色像素百分比，此值决定着变暗为黑色时的黑色总量。值越小，使得从白色区域到合适边框线
 	                  //的混合更平滑，调色区域更稀疏并且不太明显
 	double  pct_white;//白色像素百分比
-} PhotocopyVals;
+} SPhotocopy_Vals;
 
 class CBusin_OpenCV_Filter_Tool_Inst
 {
@@ -53,10 +53,10 @@ protected:
 	int differenceOfGaussian(const Mat& mat_src, Mat& mat_dst);
 	void difference_Edge_Detect( const Mat& mat_src_gray, cv::Mat& mat_dst_gray, const cv::Rect& rect);
 	//photocopy（legacy）
-	void photocopy_gimp(const Mat& mat_src_gray, size_t nMask_radius, double dThreshold, Mat& mat_gray_result);
+	int photocopy_gimp(const Mat& mat_src_gray, const SPhotocopy_Vals& photocopy_vals, Mat& mat_gray_result);
 
 	//自己按算法公式来写的
-	int photocopy_myself(const Mat& mat_src_gray, size_t nMask_radius, double dThreshold, Mat& mat_gray_result);
+	int photocopy_myself(const Mat& mat_src_gray, const SPhotocopy_Vals& photocopy_vals, Mat& mat_gray_result);
 private:
 	//影印滤镜相关
 	//https://www.spinics.net/lists/gimpdev/msg26041.html
@@ -79,6 +79,6 @@ private:
 	*Parameter: double pct_black -[in] 黑色像素点百分比  
 	*Parameter: int under_threshold -[in] 低阈值 
 	************************************/
-	static double compute_ramp(uchar  *dest1, uchar  *dest2, int length, double pct_black, int under_threshold);
+	static double compute_ramp(uchar  *dest1, uchar  *dest2, int length, double pct_black, int under_threshold, double photocopy_threshold);
 	static CBusin_OpenCV_Filter_Tool_Inst ms_inst;
 };

@@ -77,5 +77,8 @@
     <ClInclude Include="Busin_OpenCV_Connected_Graph.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Resource_Manager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

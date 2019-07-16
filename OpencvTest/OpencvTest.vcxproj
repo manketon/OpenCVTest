@@ -169,6 +169,7 @@
     <ClInclude Include="CBusin_OpenCV_Vector_Tool.h" />
     <ClInclude Include="File_System_Tool.h" />
     <ClInclude Include="ImageMaster\include\ImageMaster.h" />
+    <ClInclude Include="Resource_Manager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
