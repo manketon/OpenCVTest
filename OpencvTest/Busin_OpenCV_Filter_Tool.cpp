@@ -665,7 +665,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 	const int x = 0, y = 0;
 	const int width = mat_src_gray.cols; //原图宽
 	const int height = mat_src_gray.rows; //原图高
-	int bytes = mat_src_gray.elemSize();//每个像素所占字节数
+	int nElem_size = mat_src_gray.elemSize();//每个像素所占字节数
 	bool has_alpha = false;//是否具有alpha通道
 
 	uchar* dest1 = NULL;//dest1 for blur radius
@@ -681,7 +681,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 		for (int col = 0; col < width; col++)
 		{
 			/* desaturate */
-			dest_ptr[col] = (uchar) src_ptr[col * bytes];
+			dest_ptr[col] = (uchar) src_ptr[col * nElem_size];
 
 			/* compute  transfer */
 			double dVal = pow (dest_ptr[col], (1.0 / GAMMA));
@@ -902,23 +902,23 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 				lightness = 0;
 			}
 
-			if (bytes < 3)
+			if (nElem_size < 3)
 			{
-				dest_ptr[col * bytes] = (uchar) lightness;
+				dest_ptr[col * nElem_size] = (uchar) lightness;
 				if (has_alpha)
 				{
-					dest_ptr[col * bytes + 1] = src_ptr[col * bytes + 1];
+					dest_ptr[col * nElem_size + 1] = src_ptr[col * nElem_size + 1];
 				}
 			}
 			else
 			{
-				dest_ptr[col * bytes + 0] = lightness;
-				dest_ptr[col * bytes + 1] = lightness;
-				dest_ptr[col * bytes + 2] = lightness;
+				dest_ptr[col * nElem_size + 0] = lightness;
+				dest_ptr[col * nElem_size + 1] = lightness;
+				dest_ptr[col * nElem_size + 2] = lightness;
 
 				if (has_alpha)
 				{
-					dest_ptr[col * bytes + 3] = src_ptr[col * bytes + 3];
+					dest_ptr[col * nElem_size + 3] = src_ptr[col * nElem_size + 3];
 				}
 			}
 		}
