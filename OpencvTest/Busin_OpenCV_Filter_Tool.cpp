@@ -650,6 +650,7 @@ void CBusin_OpenCV_Filter_Tool_Inst::difference_Edge_Detect(const Mat& mat_src_g
 
 void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, size_t nMask_radius, double dThreshold, Mat& mat_gray_result)
 {
+	CV_Assert(mat_src_gray.type() == CV_8UC1);
 	//待处理的起始位置
 	int x = 0, y = 0;
 	//原图宽、高
@@ -657,22 +658,23 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 	int bytes = mat_src_gray.elemSize();//每个像素所占字节数
 	bool has_alpha = false;//是否具有alpha通道
 
-	double* val_p1 = new double[MAX (width, height)];
+	double* const val_p1 = new double[MAX (width, height)];
 
-	double* val_p2 = new double[MAX (width, height)];
-	double* val_m1 = new double[MAX (width, height)];
-	double* val_m2 = new double[MAX (width, height)];
+	double* const val_p2 = new double[MAX (width, height)];
+	double* const val_m1 = new double[MAX (width, height)];
+	double* const val_m2 = new double[MAX (width, height)];
 
-	uchar* dest1 = new uchar[width * height];//dest1 for blur radius
-	uchar* dest2 = new uchar[width * height];//dest2 for mask radius
+	uchar* const dest1 = new uchar[width * height];//dest1 for blur radius
+	uchar* const dest2 = new uchar[width * height];//dest2 for mask radius
 
 	int progress = 0;
 	int max_progress = width * height * 3;
-	uchar *src_ptr  = mat_src_gray.data;
-	uchar *dest_ptr = dest1 + (0 - y) * width + (0 - x);
 
 	for (int row = 0; row < height; row++)
 	{
+		//获取行首地址
+		const uchar *src_ptr = mat_src_gray.ptr<uchar>(row);
+		uchar * dest_ptr = dest1 + (0 - y) * width + (0 - x) + row * width;
 		for (int col = 0; col < width; col++)
 		{
 			/* desaturate */
@@ -682,14 +684,11 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 			double dVal = pow (dest_ptr[col], (1.0 / GAMMA));
 			dest_ptr[col] = (uchar) boost::algorithm::clamp(dVal, 0, 255);
 		}
-
-		src_ptr  += mat_src_gray.step[0];
-		dest_ptr += width;
 	}
 
 
 	/*  Calculate the standard deviations  from blur and mask radius */
-	double  radius = MAX (1.0, 10 * (1.0 - pvals.sharpness));
+	double  radius = MAX(1.0, 10 * (1.0 - pvals.sharpness));
 	radius   = fabs (radius) + 1.0;
 	double std_dev1 = sqrt (-(radius * radius) / (2 * log (1.0 / 255.0)));
 
@@ -712,6 +711,7 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 	int          initial_p2[4];
 	int          initial_m1[4];
 	int          initial_m2[4];
+	//先按列后按行计算
 	for (int col = 0; col < width; col++)
 	{
 		memset (val_p1, 0, height * sizeof (double));
@@ -770,7 +770,7 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 		transfer_pixels(val_p1, val_m1, dest1 + col, width, height);
 		transfer_pixels(val_p2, val_m2, dest2 + col, width, height);
 	}
-
+	//先按行后案列计算
 	for (int row = 0; row < height; row++)
 	{
 		memset (val_p1, 0, width * sizeof (double));
@@ -838,18 +838,18 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 	}
 
 	/* Compute the ramp value which sets 'pct_black' % of the darkened pixels black */
-	double dRamp_down = compute_ramp (dest1, dest2, width * height, pvals.pct_black, 1);
-	double dRamp_up   = compute_ramp (dest1, dest2, width * height, 1.0 - pvals.pct_white, 0);
+	double dRamp_down = compute_ramp(dest1, dest2, width * height, pvals.pct_black, 1);
+	double dRamp_up   = compute_ramp(dest1, dest2, width * height, 1.0 - pvals.pct_white, 0);
 
 	/* Initialize the pixel regions. */
 	mat_gray_result = Mat(mat_src_gray.size(), CV_8UC1, Scalar(255));
-	src_ptr  = mat_src_gray.data;
-	dest_ptr = mat_gray_result.data;
-	uchar  *blur_ptr = dest1 + (0 - y) * width + (0 - x);
-	uchar  *avg_ptr  = dest2 + (0 - y) * width + (0 - x);
-	
+
 	for (int row = 0; row < height; row++)
 	{
+		const uchar* src_ptr  = mat_src_gray.ptr<uchar>(row);
+		uchar* dest_ptr = mat_gray_result.ptr<uchar>(row);
+		uchar  *blur_ptr = dest1 + (0 - y) * width + (0 - x) + row * width;
+		uchar  *avg_ptr  = dest2 + (0 - y) * width + (0 - x) + row * width;
 		for (int col = 0; col < width; col++)
 		{
 			double  lightness = 0.0;
@@ -860,19 +860,25 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 				if (diff < pvals.threshold)
 				{
 					if (dRamp_down == 0.0)
+					{
 						mult = 0.0;
+					}
 					else
-						mult = (dRamp_down - MIN (dRamp_down,
-						(pvals.threshold - diff))) / dRamp_down;
+					{
+						mult = (dRamp_down - MIN (dRamp_down, (pvals.threshold - diff))) / dRamp_down;
+					}
 					lightness = boost::algorithm::clamp(blur_ptr[col] * mult, 0, 255);
 				}
 				else
 				{
 					if (dRamp_up == 0.0)
+					{
 						mult = 1.0;
+					}
 					else
-						mult = MIN (dRamp_up,
-						(diff - pvals.threshold)) / dRamp_up;
+					{
+						mult = MIN (dRamp_up, (diff - pvals.threshold)) / dRamp_up;
+					}
 
 					lightness = 255 - (1.0 - mult) * (255 - blur_ptr[col]);
 					lightness = boost::algorithm::clamp(lightness, 0, 255);
@@ -887,7 +893,9 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 			{
 				dest_ptr[col * bytes] = (uchar) lightness;
 				if (has_alpha)
+				{
 					dest_ptr[col * bytes + 1] = src_ptr[col * bytes + 1];
+				}
 			}
 			else
 			{
@@ -896,14 +904,11 @@ void CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, siz
 				dest_ptr[col * bytes + 2] = lightness;
 
 				if (has_alpha)
+				{
 					dest_ptr[col * bytes + 3] = src_ptr[col * bytes + 3];
+				}
 			}
 		}
-
-		src_ptr  += mat_src_gray.step[0];
-		dest_ptr += mat_gray_result.step[0];
-		blur_ptr += width;
-		avg_ptr  += width;
 	}
 
 	/*  free up buffers  */
