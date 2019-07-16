@@ -79,6 +79,6 @@ private:
 	*Parameter: double pct_black -[in] 黑色像素点百分比  
 	*Parameter: int under_threshold -[in] 低阈值 
 	************************************/
-	static double compute_ramp(uchar  *dest1, uchar  *dest2, int length, double pct_black, int under_threshold, double photocopy_threshold);
+	static double compute_ramp(const uchar  *dest1, const uchar  *dest2, int length, double pct_black, int under_threshold, double photocopy_threshold);
 	static CBusin_OpenCV_Filter_Tool_Inst ms_inst;
 };

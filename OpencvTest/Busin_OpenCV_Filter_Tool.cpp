@@ -662,41 +662,41 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 {
 	CV_Assert(mat_src_gray.type() == CV_8UC1);
 	//原图中待处理的起始位置
-	const int x = 0, y = 0;
-	const int width = mat_src_gray.cols; //原图宽
-	const int height = mat_src_gray.rows; //原图高
+	const int nX_start = 0, nY_start = 0;
+	const int nWidth = mat_src_gray.cols; //原图宽
+	const int nHeight = mat_src_gray.rows; //原图高
 	int nElem_size = mat_src_gray.elemSize();//每个像素所占字节数
 	bool has_alpha = false;//是否具有alpha通道
 
-	uchar* dest1 = NULL;//dest1 for blur radius
-	CNewBuffMngr<uchar> buff_mng_dest1(dest1, width * height);
+	uchar* pDest1 = NULL;//pDest1 for blur radius
+	CNewBuffMngr<uchar> buff_mng_dest1(pDest1, nWidth * nHeight);
 	int progress = 0;
-	const int max_progress = width * height * 3;
+	const int nMax_progress = nWidth * nHeight * 3;
 
-	for (int row = 0; row < height; row++)
+	for (int row = 0; row < nHeight; row++)
 	{
 		//获取行首地址
-		const uchar *src_ptr = mat_src_gray.ptr<uchar>(row);
-		uchar * dest_ptr = dest1 + (0 - y) * width + (0 - x) + row * width;
-		for (int col = 0; col < width; col++)
+		const uchar *ptr_src = mat_src_gray.ptr<uchar>(row);
+		uchar * ptr_dest = pDest1 + (0 - nY_start) * nWidth + (0 - nX_start) + row * nWidth;
+		for (int col = 0; col < nWidth; col++)
 		{
 			/* desaturate */
-			dest_ptr[col] = (uchar) src_ptr[col * nElem_size];
+			ptr_dest[col] = (uchar) ptr_src[col * nElem_size];
 
 			/* compute  transfer */
-			double dVal = pow (dest_ptr[col], (1.0 / GAMMA));
-			dest_ptr[col] = (uchar) boost::algorithm::clamp(dVal, 0, 255);
+			double dVal = pow (ptr_dest[col], (1.0 / GAMMA));
+			ptr_dest[col] = (uchar) boost::algorithm::clamp(dVal, 0, 255);
 		}
 	}
 
 
 	/*  Calculate the standard deviations  from blur and mask radius */
-	double  radius = MAX(1.0, 10 * (1.0 - photocopy_vals.sharpness));
-	radius   = fabs (radius) + 1.0;
-	double std_dev1 = sqrt (-(radius * radius) / (2 * log (1.0 / 255.0)));
+	double  dRadius = MAX(1.0, 10 * (1.0 - photocopy_vals.sharpness));
+	dRadius   = fabs (dRadius) + 1.0;
+	double dStd_dev1 = sqrt (-(dRadius * dRadius) / (2 * log (1.0 / 255.0)));
 
-	radius   = fabs (photocopy_vals.mask_radius) + 1.0;
-	double dStd_dev2 = sqrt (-(radius * radius) / (2 * log (1.0 / 255.0)));
+	dRadius   = fabs (photocopy_vals.mask_radius) + 1.0;
+	double dStd_dev2 = sqrt (-(dRadius * dRadius) / (2 * log (1.0 / 255.0)));
 	/*  derive the constants for calculating the gaussian from the std dev  */
 	double       n_p1[5], n_m1[5];
 	double       n_p2[5], n_m2[5];
@@ -705,62 +705,62 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 	double       bd_p1[5], bd_m1[5];
 	double       bd_p2[5], bd_m2[5];
 
-	find_constants(n_p1, n_m1, d_p1, d_m1, bd_p1, bd_m1, std_dev1);
+	find_constants(n_p1, n_m1, d_p1, d_m1, bd_p1, bd_m1, dStd_dev1);
 	find_constants(n_p2, n_m2, d_p2, d_m2, bd_p2, bd_m2, dStd_dev2);
 
 	/*  First the vertical pass  */
-	double* vp1 = NULL, *vp2 = NULL, *vm1 = NULL, *vm2 = NULL;
+	double* pVp1 = NULL, *pVp2 = NULL, *pVm1 = NULL, *pVm2 = NULL;
 	int          initial_p1[4];
 	int          initial_p2[4];
 	int          initial_m1[4];
 	int          initial_m2[4];
-	double* val_p1 = NULL;
-	CNewBuffMngr<double> buff_mng_val_p1(val_p1, MAX (width, height));
-	double* val_p2 = NULL;
-	CNewBuffMngr<double> buff_mng_val_p2(val_p2, MAX (width, height));
-	double* val_m1 = NULL;
-	CNewBuffMngr<double> buff_mng_val_m1(val_m1, MAX (width, height));
-	double* val_m2 = NULL;
-	CNewBuffMngr<double> buff_mng_val_m2(val_m2, MAX (width, height));
-	uchar* dest2 = NULL;//dest2 for mask radius
-	CNewBuffMngr<uchar> buff_mng_dest2(dest2, width * height);
+	double* pVal_p1 = NULL;
+	CNewBuffMngr<double> buff_mng_val_p1(pVal_p1, MAX (nWidth, nHeight));
+	double* pVal_p2 = NULL;
+	CNewBuffMngr<double> buff_mng_val_p2(pVal_p2, MAX (nWidth, nHeight));
+	double* pVal_m1 = NULL;
+	CNewBuffMngr<double> buff_mng_val_m1(pVal_m1, MAX (nWidth, nHeight));
+	double* pVal_m2 = NULL;
+	CNewBuffMngr<double> buff_mng_val_m2(pVal_m2, MAX (nWidth, nHeight));
+	uchar* pDest2 = NULL;//dest2 for mask radius
+	CNewBuffMngr<uchar> buff_mng_dest2(pDest2, nWidth * nHeight);
 	//先按列后按行计算
-	for (int col = 0; col < width; col++)
+	for (int col = 0; col < nWidth; col++)
 	{
-		memset(val_p1, 0, height * sizeof (double));
-		memset(val_p2, 0, height * sizeof (double));
-		memset(val_m1, 0, height * sizeof (double));
-		memset(val_m2, 0, height * sizeof (double));
+		memset(pVal_p1, 0, nHeight * sizeof (double));
+		memset(pVal_p2, 0, nHeight * sizeof (double));
+		memset(pVal_m1, 0, nHeight * sizeof (double));
+		memset(pVal_m2, 0, nHeight * sizeof (double));
 
-		uchar* src1  = dest1 + col;
-		uchar* sp_p1 = src1;
-		uchar* sp_m1 = src1 + (height - 1) * width;
-		vp1   = val_p1;
-		vp2   = val_p2;
-		vm1   = val_m1 + (height - 1);
-		vm2   = val_m2 + (height - 1);
+		uchar* pSrc1  = pDest1 + col;
+		uchar* sp_p1 = pSrc1;
+		uchar* sp_m1 = pSrc1 + (nHeight - 1) * nWidth;
+		pVp1   = pVal_p1;
+		pVp2   = pVal_p2;
+		pVm1   = pVal_m1 + (nHeight - 1);
+		pVm2   = pVal_m2 + (nHeight - 1);
 
 		/*  Set up the first vals  */
 		initial_p1[0] = sp_p1[0];
 		initial_m1[0] = sp_m1[0];
 
-		for (int row = 0; row < height; row++)
+		for (int row = 0; row < nHeight; row++)
 		{
 			double *vpptr1, *vmptr1;
 			double *vpptr2, *vmptr2;
 
 			int nTerms = (row < 4) ? row : 4;
 
-			vpptr1 = vp1; vmptr1 = vm1;
-			vpptr2 = vp2; vmptr2 = vm2;
+			vpptr1 = pVp1; vmptr1 = pVm1;
+			vpptr2 = pVp2; vmptr2 = pVm2;
 			int i = 0;
 			for ( i = 0; i <= nTerms; i++)
 			{
-				*vpptr1 += n_p1[i] * sp_p1[-i * width] - d_p1[i] * vp1[-i];
-				*vmptr1 += n_m1[i] * sp_m1[i * width] - d_m1[i] * vm1[i];
+				*vpptr1 += n_p1[i] * sp_p1[-i * nWidth] - d_p1[i] * pVp1[-i];
+				*vmptr1 += n_m1[i] * sp_m1[i * nWidth] - d_m1[i] * pVm1[i];
 
-				*vpptr2 += n_p2[i] * sp_p1[-i * width] - d_p2[i] * vp2[-i];
-				*vmptr2 += n_m2[i] * sp_m1[i * width] - d_m2[i] * vm2[i];
+				*vpptr2 += n_p2[i] * sp_p1[-i * nWidth] - d_p2[i] * pVp2[-i];
+				*vmptr2 += n_m2[i] * sp_m1[i * nWidth] - d_m2[i] * pVm2[i];
 			}
 
 			for (int j = i; j <= 4; j++)
@@ -772,35 +772,35 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 				*vmptr2 += (n_m2[j] - bd_m2[j]) * initial_m1[0];
 			}
 
-			sp_p1 += width;
-			sp_m1 -= width;
-			vp1   += 1;
-			vp2   += 1;
-			vm1   -= 1;
-			vm2   -= 1;
+			sp_p1 += nWidth;
+			sp_m1 -= nWidth;
+			pVp1   += 1;
+			pVp2   += 1;
+			pVm1   -= 1;
+			pVm2   -= 1;
 		}
 
-		transfer_pixels(val_p1, val_m1, dest1 + col, width, height);
-		transfer_pixels(val_p2, val_m2, dest2 + col, width, height);
+		transfer_pixels(pVal_p1, pVal_m1, pDest1 + col, nWidth, nHeight);
+		transfer_pixels(pVal_p2, pVal_m2, pDest2 + col, nWidth, nHeight);
 	}
 	//先按行后案列计算
-	for (int row = 0; row < height; row++)
+	for (int row = 0; row < nHeight; row++)
 	{
-		memset(val_p1, 0, width * sizeof (double));
-		memset(val_p2, 0, width * sizeof (double));
-		memset(val_m1, 0, width * sizeof (double));
-		memset(val_m2, 0, width * sizeof (double));
+		memset(pVal_p1, 0, nWidth * sizeof (double));
+		memset(pVal_p2, 0, nWidth * sizeof (double));
+		memset(pVal_m1, 0, nWidth * sizeof (double));
+		memset(pVal_m2, 0, nWidth * sizeof (double));
 
-		uchar* src1 = dest1 + row * width;
-		uchar* src2 = dest2 + row * width;
-		uchar* sp_p1 = src1;
-		uchar* sp_p2 = src2;
-		uchar* sp_m1 = src1 + width - 1;
-		uchar* sp_m2 = src2 + width - 1;
-		vp1   = val_p1;
-		vp2   = val_p2;
-		vm1   = val_m1 + width - 1;
-		vm2   = val_m2 + width - 1;
+		uchar* pSrc1 = pDest1 + row * nWidth;
+		uchar* pSrc2 = pDest2 + row * nWidth;
+		uchar* sp_p1 = pSrc1;
+		uchar* sp_p2 = pSrc2;
+		uchar* sp_m1 = pSrc1 + nWidth - 1;
+		uchar* sp_m2 = pSrc2 + nWidth - 1;
+		pVp1   = pVal_p1;
+		pVp2   = pVal_p2;
+		pVm1   = pVal_m1 + nWidth - 1;
+		pVm2   = pVal_m2 + nWidth - 1;
 
 		/*  Set up the first vals  */
 		initial_p1[0] = sp_p1[0];
@@ -808,23 +808,23 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 		initial_m1[0] = sp_m1[0];
 		initial_m2[0] = sp_m2[0];
 
-		for (int col = 0; col < width; col++)
+		for (int col = 0; col < nWidth; col++)
 		{
 			double *vpptr1, *vmptr1;
 			double *vpptr2, *vmptr2;
 
 			int nTerms = (col < 4) ? col : 4;
 
-			vpptr1 = vp1; vmptr1 = vm1;
-			vpptr2 = vp2; vmptr2 = vm2;
+			vpptr1 = pVp1; vmptr1 = pVm1;
+			vpptr2 = pVp2; vmptr2 = pVm2;
 			int i = 0;
 			for (i = 0; i <= nTerms; i++)
 			{
-				*vpptr1 += n_p1[i] * sp_p1[-i] - d_p1[i] * vp1[-i];
-				*vmptr1 += n_m1[i] * sp_m1[i] - d_m1[i] * vm1[i];
+				*vpptr1 += n_p1[i] * sp_p1[-i] - d_p1[i] * pVp1[-i];
+				*vmptr1 += n_m1[i] * sp_m1[i] - d_m1[i] * pVm1[i];
 
-				*vpptr2 += n_p2[i] * sp_p2[-i] - d_p2[i] * vp2[-i];
-				*vmptr2 += n_m2[i] * sp_m2[i] - d_m2[i] * vm2[i];
+				*vpptr2 += n_p2[i] * sp_p2[-i] - d_p2[i] * pVp2[-i];
+				*vmptr2 += n_m2[i] * sp_m2[i] - d_m2[i] * pVm2[i];
 			}
 
 			for (int j = i; j <= 4; j++)
@@ -840,35 +840,35 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 			sp_p2 ++;
 			sp_m1 --;
 			sp_m2 --;
-			vp1 ++;
-			vp2 ++;
-			vm1 --;
-			vm2 --;
+			pVp1 ++;
+			pVp2 ++;
+			pVm1 --;
+			pVm2 --;
 		}
 
-		transfer_pixels(val_p1, val_m1, dest1 + row * width, 1, width);
-		transfer_pixels(val_p2, val_m2, dest2 + row * width, 1, width);
+		transfer_pixels(pVal_p1, pVal_m1, pDest1 + row * nWidth, 1, nWidth);
+		transfer_pixels(pVal_p2, pVal_m2, pDest2 + row * nWidth, 1, nWidth);
 	}
 
 	/* Compute the ramp value which sets 'pct_black' % of the darkened pixels black */
-	double dRamp_down = compute_ramp(dest1, dest2, width * height, photocopy_vals.pct_black, 1, photocopy_vals.threshold);
-	double dRamp_up   = compute_ramp(dest1, dest2, width * height, 1.0 - photocopy_vals.pct_white, 0, photocopy_vals.threshold);
+	double dRamp_down = compute_ramp(pDest1, pDest2, nWidth * nHeight, photocopy_vals.pct_black, 1, photocopy_vals.threshold);
+	double dRamp_up   = compute_ramp(pDest1, pDest2, nWidth * nHeight, 1.0 - photocopy_vals.pct_white, 0, photocopy_vals.threshold);
 
 	/* Initialize the pixel regions. */
 	mat_gray_result = Mat(mat_src_gray.size(), CV_8UC1, Scalar(255));
 
-	for (int row = 0; row < height; row++)
+	for (int row = 0; row < nHeight; row++)
 	{
-		const uchar* src_ptr  = mat_src_gray.ptr<uchar>(row);
-		uchar* dest_ptr = mat_gray_result.ptr<uchar>(row);
-		uchar  *blur_ptr = dest1 + (0 - y) * width + (0 - x) + row * width;
-		uchar  *avg_ptr  = dest2 + (0 - y) * width + (0 - x) + row * width;
-		for (int col = 0; col < width; col++)
+		const uchar* ptr_src  = mat_src_gray.ptr<uchar>(row);
+		uchar* ptr_dest = mat_gray_result.ptr<uchar>(row);
+		uchar  *ptr_blur = pDest1 + (0 - nY_start) * nWidth + (0 - nX_start) + row * nWidth;
+		uchar  *ptr_avg  = pDest2 + (0 - nY_start) * nWidth + (0 - nX_start) + row * nWidth;
+		for (int col = 0; col < nWidth; col++)
 		{
 			double  lightness = 0.0;
-			if (avg_ptr[col] > EPSILON)
+			if (ptr_avg[col] > EPSILON)
 			{
-				double diff = (double) blur_ptr[col] / (double) avg_ptr[col];
+				double diff = (double) ptr_blur[col] / (double) ptr_avg[col];
 				double mult = 0.0;
 				if (diff < photocopy_vals.threshold)
 				{
@@ -880,7 +880,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 					{
 						mult = (dRamp_down - MIN (dRamp_down, (photocopy_vals.threshold - diff))) / dRamp_down;
 					}
-					lightness = boost::algorithm::clamp(blur_ptr[col] * mult, 0, 255);
+					lightness = boost::algorithm::clamp(ptr_blur[col] * mult, 0, 255);
 				}
 				else
 				{
@@ -893,7 +893,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 						mult = MIN (dRamp_up, (diff - photocopy_vals.threshold)) / dRamp_up;
 					}
 
-					lightness = 255 - (1.0 - mult) * (255 - blur_ptr[col]);
+					lightness = 255 - (1.0 - mult) * (255 - ptr_blur[col]);
 					lightness = boost::algorithm::clamp(lightness, 0, 255);
 				}
 			}
@@ -904,21 +904,21 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 
 			if (nElem_size < 3)
 			{
-				dest_ptr[col * nElem_size] = (uchar) lightness;
+				ptr_dest[col * nElem_size] = (uchar) lightness;
 				if (has_alpha)
 				{
-					dest_ptr[col * nElem_size + 1] = src_ptr[col * nElem_size + 1];
+					ptr_dest[col * nElem_size + 1] = ptr_src[col * nElem_size + 1];
 				}
 			}
 			else
 			{
-				dest_ptr[col * nElem_size + 0] = lightness;
-				dest_ptr[col * nElem_size + 1] = lightness;
-				dest_ptr[col * nElem_size + 2] = lightness;
+				ptr_dest[col * nElem_size + 0] = lightness;
+				ptr_dest[col * nElem_size + 1] = lightness;
+				ptr_dest[col * nElem_size + 2] = lightness;
 
 				if (has_alpha)
 				{
-					dest_ptr[col * nElem_size + 3] = src_ptr[col * nElem_size + 3];
+					ptr_dest[col * nElem_size + 3] = ptr_src[col * nElem_size + 3];
 				}
 			}
 		}
@@ -996,7 +996,7 @@ void CBusin_OpenCV_Filter_Tool_Inst::transfer_pixels(double *pdScr1, double *pdS
 	}
 }
 
-void CBusin_OpenCV_Filter_Tool_Inst::find_constants(double n_p[], double n_m[], double d_p[], double d_m[], double bd_p[], double bd_m[], double std_dev)
+void CBusin_OpenCV_Filter_Tool_Inst::find_constants(double n_p[], double n_m[], double d_p[], double d_m[], double bd_p[], double bd_m[], double dStd_dev)
 {
 	int    i = 0;
 	double constants[8] = {0};
@@ -1006,11 +1006,11 @@ void CBusin_OpenCV_Filter_Tool_Inst::find_constants(double n_p[], double n_m[], 
 	*  using a 4th order approximation of the gaussian operator
 	*/
 
-	nDiv = sqrt (2 * boost::math::constants::pi<double>()) * std_dev;
-	constants [0] = -1.783 / std_dev;
-	constants [1] = -1.723 / std_dev;
-	constants [2] = 0.6318 / std_dev;
-	constants [3] = 1.997  / std_dev;
+	nDiv = sqrt (2 * boost::math::constants::pi<double>()) * dStd_dev;
+	constants [0] = -1.783 / dStd_dev;
+	constants [1] = -1.723 / dStd_dev;
+	constants [2] = 0.6318 / dStd_dev;
+	constants [3] = 1.997  / dStd_dev;
 	constants [4] = 1.6803 / nDiv;
 	constants [5] = 3.735 / nDiv;
 	constants [6] = -0.6803 / nDiv;
@@ -1087,7 +1087,7 @@ void CBusin_OpenCV_Filter_Tool_Inst::find_constants(double n_p[], double n_m[], 
 	}
 }
 
-double CBusin_OpenCV_Filter_Tool_Inst::compute_ramp(uchar *dest1, uchar *dest2, int length, double pct_black, int under_threshold, double photocopy_threshold)
+double CBusin_OpenCV_Filter_Tool_Inst::compute_ramp(const uchar *pDest1, const uchar *pDest2, int nLength, double dPct_black, int nUnder_threshold, double dPhotocopy_threshold)
 {
 	int    hist[2000];
 	int    count;
@@ -1097,15 +1097,15 @@ double CBusin_OpenCV_Filter_Tool_Inst::compute_ramp(uchar *dest1, uchar *dest2, 
 	memset(hist, 0, sizeof (int) * 2000);
 	count = 0;
 
-	for (i = 0; i < length; i++)
+	for (i = 0; i < nLength; i++)
 	{
-		if (*dest2 != 0)
+		if (*pDest2 != 0)
 		{
-			double diff = (double) *dest1 / (double) *dest2;
+			double diff = (double) *pDest1 / (double) *pDest2;
 
-			if (under_threshold)
+			if (nUnder_threshold)
 			{
-				if (diff < photocopy_threshold)
+				if (diff < dPhotocopy_threshold)
 				{
 					hist[(int) (diff * 1000)] += 1;
 					count += 1;
@@ -1113,7 +1113,7 @@ double CBusin_OpenCV_Filter_Tool_Inst::compute_ramp(uchar *dest1, uchar *dest2, 
 			}
 			else
 			{
-				if (diff >= photocopy_threshold && diff < 2.0)
+				if (diff >= dPhotocopy_threshold && diff < 2.0)
 				{
 					hist[(int) (diff * 1000)] += 1;
 					count += 1;
@@ -1121,27 +1121,27 @@ double CBusin_OpenCV_Filter_Tool_Inst::compute_ramp(uchar *dest1, uchar *dest2, 
 			}
 		}
 
-		dest1++;
-		dest2++;
+		pDest1++;
+		pDest2++;
 	}
 
-	if (pct_black == 0.0 || count == 0)
-		return (under_threshold ? 1.0 : 0.0);
+	if (dPct_black == 0.0 || count == 0)
+		return (nUnder_threshold ? 1.0 : 0.0);
 
 	sum = 0;
 	for (i = 0; i < 2000; i++)
 	{
 		sum += hist[i];
-		if (((double) sum / (double) count) > pct_black)
+		if (((double) sum / (double) count) > dPct_black)
 		{
-			if (under_threshold)
-				return (photocopy_threshold - (double) i / 1000.0);
+			if (nUnder_threshold)
+				return (dPhotocopy_threshold - (double) i / 1000.0);
 			else
-				return ((double) i / 1000.0 - photocopy_threshold);
+				return ((double) i / 1000.0 - dPhotocopy_threshold);
 		}
 	}
 
-	return (under_threshold ? 0.0 : 1.0);
+	return (nUnder_threshold ? 0.0 : 1.0);
 }
 
 CBusin_OpenCV_Filter_Tool_Inst CBusin_OpenCV_Filter_Tool_Inst::ms_inst;
