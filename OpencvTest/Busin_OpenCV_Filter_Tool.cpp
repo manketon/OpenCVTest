@@ -714,6 +714,7 @@ int CBusin_OpenCV_Filter_Tool_Inst::photocopy_gimp(const Mat& mat_src_gray, cons
 	int          initial_p2[4];
 	int          initial_m1[4];
 	int          initial_m2[4];
+	//给相关变量分配内存空间（采用内存管理对象来管理内存）
 	double* pVal_p1 = NULL;
 	CNewBuffMngr<double> buff_mng_val_p1(pVal_p1, MAX (nWidth, nHeight));
 	double* pVal_p2 = NULL;
@@ -995,7 +996,7 @@ void CBusin_OpenCV_Filter_Tool_Inst::transfer_pixels(double *pdScr1, double *pdS
 		pcDest += nJump;
 	}
 }
-
+//使用高斯算子的四阶近似来实现非正式序列的常数
 void CBusin_OpenCV_Filter_Tool_Inst::find_constants(double n_p[], double n_m[], double d_p[], double d_m[], double bd_p[], double bd_m[], double dStd_dev)
 {
 	int    i = 0;
