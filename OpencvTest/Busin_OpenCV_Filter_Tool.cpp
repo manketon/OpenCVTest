@@ -398,9 +398,10 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_difference_Edge_Detect()
 		Mat mat_src_bgr = imread(str_img_path, 1);
 		int width = mat_src_bgr.cols;
 		int heigh = mat_src_bgr.rows;
-		Mat mat_dst_gray;
+		//TODO::增强对比度和亮度
 		Mat mat_src_gray;
 		cv::cvtColor(mat_src_bgr, mat_src_gray, CV_BGR2GRAY);
+		Mat mat_dst_gray;
 		difference_Edge_Detect(mat_src_gray, mat_dst_gray, Rect(0, 0, width, heigh));
 		Mat img_for_show;
 		cv::resize(mat_dst_gray, img_for_show, Size(mat_dst_gray.cols / 3, mat_dst_gray.rows / 4));
@@ -420,6 +421,102 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_difference_Edge_Detect()
 		addWeighted(mat_dst_gray, -1, NULL, 0, 255, mat_inverted_gray);
 		imwrite(str_dst_img_path + "_sumiao.jpg", mat_inverted_gray);
 	}
+	return 0;
+}
+
+int CBusin_OpenCV_Filter_Tool_Inst::test_draw_chin()
+{
+	//读取人物图
+	Mat mat_src_gray = imread("F:/GitHub/OpenCVTest/trunk/OpencvTest/images_src/0620151349.jpg", IMREAD_GRAYSCALE);
+	if (mat_src_gray.empty())
+	{
+		std::cout <<__FUNCTION__ << "| fail to read image" << endl;
+		return -1;
+	}
+
+	//下巴顶点列表
+	vector<cv::Point2f> vec_chin_points;
+	vec_chin_points.push_back(Point2f(1107.26, 1373.39));
+	vec_chin_points.push_back(Point2f(1118.8, 1422.04));
+	vec_chin_points.push_back(Point2f(1131, 1470.01));
+	vec_chin_points.push_back(Point2f(1145.9, 1518.16));
+	vec_chin_points.push_back(Point2f(1161.97, 1565.18));
+	vec_chin_points.push_back(Point2f(1179.12, 1613.65));
+	vec_chin_points.push_back(Point2f(1200.39, 1658.55));
+	vec_chin_points.push_back(Point2f(1234.04, 1706.42));
+	vec_chin_points.push_back(Point2f(1275.61, 1744.79));
+	vec_chin_points.push_back(Point2f(1323.92, 1778.03));
+ 	vec_chin_points.push_back(Point2f(1378.02, 1797.53));
+	//chin
+	vec_chin_points.push_back(Point2f(1428.18, 1807.07));
+	vec_chin_points.push_back(Point2f(1480.7,  1801.78));
+	vec_chin_points.push_back(Point2f(1532.58, 1792.03));
+	//left cheek
+	vec_chin_points.push_back(Point2f(1577.94, 1769.14));
+	vec_chin_points.push_back(Point2f(1624.8, 1735.83));
+	vec_chin_points.push_back(Point2f(1663.42, 1693.04));
+	vec_chin_points.push_back(Point2f(1694.84, 1644.08));
+	vec_chin_points.push_back(Point2f(1714.44, 1589.13));
+	vec_chin_points.push_back(Point2f(1722.26, 1538.31));
+	vec_chin_points.push_back(Point2f(1724.85, 1486.92));
+	vec_chin_points.push_back(Point2f( 1726.79, 1435.85));
+	vec_chin_points.push_back(Point2f( 1727.85, 1386.39));
+	vec_chin_points.push_back(Point2f(1725.72, 1335.47));
+	vec_chin_points.push_back(Point2f(1723.16, 1286.86));
+	//画出人脸检测结果点
+	for (int i = 0; i != vec_chin_points.size(); ++i)
+	{
+		mat_src_gray.at<uchar>(vec_chin_points[i]) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(0, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(0, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(1, 0)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(1, 0)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(1, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(1, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(-1, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(-1, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(1, 2)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(1, 2)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(2, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(2, 1)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(2, 2)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(2, 2)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(-2, 2)) = 255;
+		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(-2, 2)) = 255;
+	}
+	cv::namedWindow("before", CV_WINDOW_NORMAL);
+	cv::imshow("before", mat_src_gray);
+		cv::waitKey();
+	//使用CatmullRom插样算法来获取下巴顶点之间曲线上的点
+	vector<Point2f> vec_cure_points;
+	for (int i = 0; i != vec_chin_points.size() - 3; ++i)
+	{
+		Point2f p0 = vec_chin_points[i];
+		Point2f p1 = vec_chin_points[i + 1];
+		Point2f p2 = vec_chin_points[i + 2];
+		Point2f p3 = vec_chin_points[i + 3];
+		CBusin_OpenCV_Common_Tool::instance().get_CatmullRom_points(p0, p1, p2, p3, 1000, vec_cure_points);
+	}
+	//画曲线
+	for (int i = 0; i != vec_cure_points.size(); ++i)
+	{
+		mat_src_gray.at<uchar>(vec_cure_points[i]) = 255;
+// 		mat_src_gray.at<uchar>(vec_cure_points[i] + Point2f(0, 1)) = 255;
+// 		mat_src_gray.at<uchar>(vec_cure_points[i] - Point2f(0, 1)) = 255;
+// 		mat_src_gray.at<uchar>(vec_cure_points[i] - Point2f(1, 0)) = 255;
+// 		mat_src_gray.at<uchar>(vec_cure_points[i] + Point2f(1, 0)) = 255;
+	}
+	cv::namedWindow("after", CV_WINDOW_NORMAL);
+	cv::imshow("after", mat_src_gray);
+	cv::waitKey();
+	Mat mat_binary(mat_src_gray.size(), CV_8UC1, Scalar(0));
+	for(int i = 0; i != vec_cure_points.size(); ++ i)
+	{
+		mat_binary.at<uchar>(vec_cure_points[i]) = 255;
+	}
+	cv::namedWindow("mat_binary", CV_WINDOW_NORMAL);
+	cv::imshow("mat_binary", mat_src_gray);
+	cv::waitKey();
 	return 0;
 }
 

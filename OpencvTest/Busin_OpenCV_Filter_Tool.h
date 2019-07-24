@@ -43,6 +43,7 @@ public:
 	int test_photocopy_myself();
 	int test_photocopy_GIMP();
 	int test_difference_Edge_Detect();
+	int test_draw_chin();
 protected:
 	//基于拉普拉斯锐化算法的素描算法
 	void Sketch(const Mat& img, Mat& dst);

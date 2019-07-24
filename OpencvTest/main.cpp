@@ -320,7 +320,7 @@ int main(int argc, char** argv)
 // 			"F:/project/CoreRepo/Development/Source/trunk/comnon_sdk/bin/mtrec_scp/mt_scylla/ee_handwriting_test/wenzi_luming_right_with_line.jpg");
 		//	    CBusin_OpenCV_Common_Tool::instance().test_get_binary_gray_mat("F:\\project\\Programming_Test\\OpencvTest\\OpencvTest\\images_src");
 //		test_gray_mat();
-//		CBusin_OpenCV_Contour_Tool::instance().test("F:/project/Programming_Test/OpencvTest/OpencvTest/images_src/guxiaowei.jpg");
+//		CBusin_OpenCV_Contour_Tool::instance().test("F:/GitHub/OpenCVTest/trunk/OpencvTest/images_src/xiaba_jll.jpg");
 //	    CInscribed_Polygon_Tool::instace().test_max_inscribed_rect_using_traversing_for_rotated2();
 //		test_create_black_background_img();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_sketch();
@@ -331,9 +331,11 @@ int main(int argc, char** argv)
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_differenceOfGaussian();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_difference_IPLB();
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_difference_Edge_Detect();
-		CBusin_OpenCV_Filter_Tool_Inst::instance().test_photocopy_GIMP();
+//		CBusin_OpenCV_Filter_Tool_Inst::instance().test_photocopy_GIMP();
 //		CBusin_OpenCV_Connected_Graph::instance().test_connected_graph_img();
 //		CBusin_OpenCV_Connected_Graph::instance().test_connected_graph_arr();
+//		CBusin_OpenCV_Common_Tool::instance().test_Catmull_Rom();
+		CBusin_OpenCV_Filter_Tool_Inst::instance().test_draw_chin();
 	}
 	catch (std::exception& e)
 	{

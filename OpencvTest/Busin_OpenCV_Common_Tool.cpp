@@ -710,6 +710,45 @@ int CBusin_OpenCV_Common_Tool::test_shrink_mat()
 	return 0;
 }
 
+int CBusin_OpenCV_Common_Tool::test_Catmull_Rom()
+{
+	IplImage* img = cvCreateImage(cvSize(300,300), 8, 1);  
+	for (int i = 0; i < img->height; ++i)  
+	{      
+		for (int j = 0; j < img->width; ++j)  
+		{         
+			((char *)(img->imageData + img->widthStep * (i)))[j] = 0;     
+		}  
+	}  
+	cv::Point2f point0,point1,point2,point3,point4;//3个控制点来做  
+	point1.x = 50;  
+	point1.y = 50;
+	point2.x = 90;  
+	point2.y = 120;  
+	point3.x = 70; 
+	point3.y = 200;  
+	//构造前后两个顶点
+	point0.x = point1.x+(point1.x-point2.x);  
+	point0.y = point1.y+(point1.y-point2.y);  
+	point4.x = point3.x+(point3.x-point2.x);  
+	point4.y = point3.y+(point3.y-point2.y);  
+	((char *)(img->imageData + img->widthStep * ((int)point1.y)))[(int)point1.x] = 255;  
+	((char *)(img->imageData + img->widthStep * ((int)point2.y)))[(int)point2.x] = 255;  
+	((char *)(img->imageData + img->widthStep * ((int)point3.y)))[(int)point3.x] = 255; 
+	int nGranularity = 500;
+	vector<Point2f> vec_points;
+	get_CatmullRom_points(point0, point1, point2, point3, nGranularity, vec_points);
+	get_CatmullRom_points(point1, point2, point3, point4, nGranularity, vec_points);
+	for (int i = 0; i != vec_points.size(); ++i)
+	{
+		const Point pi = (Point)vec_points[i];
+		((char *)(img->imageData + img->widthStep * (pi.y)))[pi.x] = 255; 
+	}
+	cvShowImage("scr", img); 
+	cvWaitKey(0);  
+	return 0;
+}
+
 string CBusin_OpenCV_Common_Tool::get_nc_tail(const size_t& nLastN)
 {
 	size_t nTmp_lastN = nLastN;
@@ -1324,6 +1363,21 @@ string CBusin_OpenCV_Common_Tool::get_nc_head(size_t& nLastN)
 		+ "N8 G17\n";
 	nLastN = 9; //文件头总函数+1
 	return str_head_flg;
+}
+
+int CBusin_OpenCV_Common_Tool::get_CatmullRom_points(const cv::Point2f& p0, const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3 , int nGranularity, std::vector<cv::Point2f>& vec_curve_points)
+{
+	for (int i = 1; i < nGranularity ; ++i) 
+	{               
+		float t = (float) i * (1.0f / (float) nGranularity);            
+		float tt = t * t;             
+		float ttt = tt * t;          
+		CvPoint pi; //中间点 
+		pi.x = 0.5 * (2 * p1.x + (p2.x - p0.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * tt + (3 * p1.x - p0.x - 3 * p2.x + p3.x) * ttt);             
+		pi.y = 0.5 * (2 * p1.y + (p2.y - p0.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * tt + (3 * p1.y - p0.y - 3 * p2.y + p3.y) * ttt);         
+		vec_curve_points.push_back(pi);
+	}  
+	return 0;
 }
 
 CBusin_OpenCV_Common_Tool::CBusin_OpenCV_Common_Tool()

@@ -44,7 +44,7 @@ void thresh_callback(int, void* )
 	}
 
 	/// 在窗体中显示结果
-	namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
+	namedWindow( "Contours", CV_WINDOW_NORMAL );
 	imshow( "Contours", drawing );
 	imwrite("F:/GitHub/OpenCVTest/trunk/OpencvTest/images_result/result.jpg", drawing);
 }
@@ -60,14 +60,18 @@ int CBusin_OpenCV_Contour_Tool::test(const string& str_img_file_path)
 {
 	/// 加载源图像
 	src = imread(str_img_file_path.c_str(), 1);
-
+	if (src.empty())
+	{
+		std::cout << __FUNCTION__ << " | fail to open file:" << str_img_file_path << endl;
+		return -1;
+	}
 	/// 转成灰度并模糊化降噪
 	cvtColor( src, src_gray, CV_BGR2GRAY );
 	//		blur( src_gray, src_gray, Size(3,3) );
 
 	/// 创建窗体
 	char* source_window = "Source";
-	namedWindow( source_window, CV_WINDOW_AUTOSIZE );
+	namedWindow( source_window, CV_WINDOW_NORMAL );
 	imshow( source_window, src );
 
 	createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );

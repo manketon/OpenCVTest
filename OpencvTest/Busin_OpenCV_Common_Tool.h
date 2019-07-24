@@ -101,6 +101,12 @@ public:
 	int test_change_contrast_and_brightness(const string& str_img_path);
 	int test_wenzi_G_code(const string& str_img_path);
 	int test_shrink_mat();
+	//利用Catmull-Rom算法拟合曲
+	int test_Catmull_Rom();
+	//使用CatmullRom插样算法来获取点p1和p2直接曲线上的点
+	int get_CatmullRom_points(const cv::Point2f& p0, const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3
+		, int nGranularity, std::vector<cv::Point2f>& vec_curve_points);
+
 protected:
 	/************************************
 	* Method:    get_binary_gray_mat
@@ -219,7 +225,10 @@ protected:
 
 	int get_nc_effective_data(const vector<vector<Point> >& vec_contours, const Point& point_00, size_t& nLastN
 		, float fScale_pic_devide_mm, float fZ_up, float fZ_down, string& str_nc_data);
-
+	int draw_curve_with_CatmullRom()
+	{
+		return 0;
+	}
 	CBusin_OpenCV_Common_Tool();
 	CBusin_OpenCV_Common_Tool(const CBusin_OpenCV_Common_Tool&);
 	CBusin_OpenCV_Common_Tool& operator=(const CBusin_OpenCV_Common_Tool&);
