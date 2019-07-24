@@ -16,6 +16,7 @@
 * </table>
 *****************************************************************/
 #include "Busin_OpenCV_Common_Tool.h"
+#include <opencv2/core/core_c.h>
 
 
 
@@ -1365,21 +1366,34 @@ string CBusin_OpenCV_Common_Tool::get_nc_head(size_t& nLastN)
 	return str_head_flg;
 }
 
+/************************************
+* Method:    get_CatmullRom_points
+* Brief:  使用CatmullRom算法来获取点p1和p2之间的曲线。注意：接受参数p0-p3四个点后，所得的曲线为p1和p2之间的
+* Access:    public 
+* Returns:   int
+* Qualifier:
+*Parameter: const cv::Point2f & p0 -[in]  
+*Parameter: const cv::Point2f & p1 -[in]  
+*Parameter: const cv::Point2f & p2 -[int]  
+*Parameter: const cv::Point2f & p3 -[in]  
+*Parameter: int nGranularity -[in] 间隔尺寸大小，值越大，点越多 
+*Parameter: std::vector<cv::Point2f> & vec_curve_points -[out] 所得曲线上的顶点列表  
+************************************/
 int CBusin_OpenCV_Common_Tool::get_CatmullRom_points(const cv::Point2f& p0, const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3 , int nGranularity, std::vector<cv::Point2f>& vec_curve_points)
 {
+	CV_Assert(nGranularity != 0);
 	for (int i = 1; i < nGranularity ; ++i) 
 	{               
 		float t = (float) i * (1.0f / (float) nGranularity);            
 		float tt = t * t;             
 		float ttt = tt * t;          
-		CvPoint pi; //中间点 
+		Point2f pi; //中间点 
 		pi.x = 0.5 * (2 * p1.x + (p2.x - p0.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * tt + (3 * p1.x - p0.x - 3 * p2.x + p3.x) * ttt);             
 		pi.y = 0.5 * (2 * p1.y + (p2.y - p0.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * tt + (3 * p1.y - p0.y - 3 * p2.y + p3.y) * ttt);         
 		vec_curve_points.push_back(pi);
 	}  
 	return 0;
 }
-
 CBusin_OpenCV_Common_Tool::CBusin_OpenCV_Common_Tool()
 {
 

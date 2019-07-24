@@ -467,26 +467,14 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_draw_chin()
 	for (int i = 0; i != vec_chin_points.size(); ++i)
 	{
 		mat_src_gray.at<uchar>(vec_chin_points[i]) = 255;
+		//为了使得特征点更加突出
 		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(0, 1)) = 255;
 		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(0, 1)) = 255;
 		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(1, 0)) = 255;
 		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(1, 0)) = 255;
 		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(1, 1)) = 255;
 		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(1, 1)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(-1, 1)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(-1, 1)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(1, 2)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(1, 2)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(2, 1)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(2, 1)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(2, 2)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(2, 2)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] - Point2f(-2, 2)) = 255;
-		mat_src_gray.at<uchar>(vec_chin_points[i] + Point2f(-2, 2)) = 255;
 	}
-	cv::namedWindow("before", CV_WINDOW_NORMAL);
-	cv::imshow("before", mat_src_gray);
-		cv::waitKey();
 	//使用CatmullRom插样算法来获取下巴顶点之间曲线上的点
 	vector<Point2f> vec_cure_points;
 	for (int i = 0; i != vec_chin_points.size() - 3; ++i)
@@ -495,28 +483,14 @@ int CBusin_OpenCV_Filter_Tool_Inst::test_draw_chin()
 		Point2f p1 = vec_chin_points[i + 1];
 		Point2f p2 = vec_chin_points[i + 2];
 		Point2f p3 = vec_chin_points[i + 3];
-		CBusin_OpenCV_Common_Tool::instance().get_CatmullRom_points(p0, p1, p2, p3, 1000, vec_cure_points);
+		CBusin_OpenCV_Common_Tool::instance().get_CatmullRom_points(p0, p1, p2, p3, 500, vec_cure_points);
 	}
 	//画曲线
 	for (int i = 0; i != vec_cure_points.size(); ++i)
 	{
 		mat_src_gray.at<uchar>(vec_cure_points[i]) = 255;
-// 		mat_src_gray.at<uchar>(vec_cure_points[i] + Point2f(0, 1)) = 255;
-// 		mat_src_gray.at<uchar>(vec_cure_points[i] - Point2f(0, 1)) = 255;
-// 		mat_src_gray.at<uchar>(vec_cure_points[i] - Point2f(1, 0)) = 255;
-// 		mat_src_gray.at<uchar>(vec_cure_points[i] + Point2f(1, 0)) = 255;
 	}
-	cv::namedWindow("after", CV_WINDOW_NORMAL);
-	cv::imshow("after", mat_src_gray);
-	cv::waitKey();
-	Mat mat_binary(mat_src_gray.size(), CV_8UC1, Scalar(0));
-	for(int i = 0; i != vec_cure_points.size(); ++ i)
-	{
-		mat_binary.at<uchar>(vec_cure_points[i]) = 255;
-	}
-	cv::namedWindow("mat_binary", CV_WINDOW_NORMAL);
-	cv::imshow("mat_binary", mat_src_gray);
-	cv::waitKey();
+	cv::imwrite("F:/GitHub/OpenCVTest/trunk/OpencvTest/images_result/chin.jpg", mat_src_gray);
 	return 0;
 }
 
@@ -682,7 +656,8 @@ int CBusin_OpenCV_Filter_Tool_Inst::differenceOfGaussian(const Mat& mat_src, Mat
 // 			setRGB( image2, 0, y, width, 1, pixels );
 // 		}
 // 
-// 	}
+// 	}
+
 	return 0;
 }
 //max( |P1-P5|, |P2-P6|, |P3-P7|, |P4-P8| )

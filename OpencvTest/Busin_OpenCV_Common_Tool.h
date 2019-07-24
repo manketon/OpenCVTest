@@ -103,7 +103,7 @@ public:
 	int test_shrink_mat();
 	//利用Catmull-Rom算法拟合曲
 	int test_Catmull_Rom();
-	//使用CatmullRom插样算法来获取点p1和p2直接曲线上的点
+	//使用CatmullRom插样算法来获取点p1和p2直接曲线上的点。
 	int get_CatmullRom_points(const cv::Point2f& p0, const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p3
 		, int nGranularity, std::vector<cv::Point2f>& vec_curve_points);
 
@@ -225,9 +225,17 @@ protected:
 
 	int get_nc_effective_data(const vector<vector<Point> >& vec_contours, const Point& point_00, size_t& nLastN
 		, float fScale_pic_devide_mm, float fZ_up, float fZ_down, string& str_nc_data);
-	int draw_curve_with_CatmullRom()
+	//参考自https://www.cnblogs.com/herenzhiming/articles/9696706.html
+	Point2f CatmullRomPoint(Point2f P0, Point2f P1, Point2f P2, Point2f P3, float t)
 	{
-		return 0;
+		float factor = 0.5f;
+		Point2f c0 = P1;
+		Point2f c1 = (P2 - P0) * factor;
+		Point2f c2 = (P2 - P1) * 3.0f - (P3 - P1) * factor - (P2 - P0) * 2.0f * factor;
+		Point2f c3 = (P2 - P1) * -2.0f + (P3 - P1) * factor + (P2 - P0) * factor;
+		Point2f curvePoint = c3 * t * t * t + c2 * t * t + c1 * t + c0;
+
+		return curvePoint;
 	}
 	CBusin_OpenCV_Common_Tool();
 	CBusin_OpenCV_Common_Tool(const CBusin_OpenCV_Common_Tool&);

@@ -334,7 +334,7 @@ int main(int argc, char** argv)
 //		CBusin_OpenCV_Filter_Tool_Inst::instance().test_photocopy_GIMP();
 //		CBusin_OpenCV_Connected_Graph::instance().test_connected_graph_img();
 //		CBusin_OpenCV_Connected_Graph::instance().test_connected_graph_arr();
-//		CBusin_OpenCV_Common_Tool::instance().test_Catmull_Rom();
+		CBusin_OpenCV_Common_Tool::instance().test_Catmull_Rom();
 		CBusin_OpenCV_Filter_Tool_Inst::instance().test_draw_chin();
 	}
 	catch (std::exception& e)
